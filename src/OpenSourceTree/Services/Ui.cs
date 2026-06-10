@@ -713,14 +713,20 @@ public static class Ui
 
         var provider = new ComboBox
         {
-            ItemsSource = new[] { "GitHub", "GitLab" },
+            ItemsSource = new[] { "GitHub", "GitLab", "Bitbucket" },
             SelectedIndex = 0,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         var username = new TextBox { Watermark = "Username" };
         var token = new TextBox { Watermark = "Personal access token (optional)", PasswordChar = '•' };
         var baseUrl = new TextBox { Watermark = "https://gitlab.example.com (GitLab only)", IsEnabled = false };
-        provider.SelectionChanged += (_, _) => baseUrl.IsEnabled = provider.SelectedIndex == 1;
+        provider.SelectionChanged += (_, _) =>
+        {
+            baseUrl.IsEnabled = provider.SelectedIndex == 1;
+            token.Watermark = provider.SelectedIndex == 2
+                ? "App password (optional)"
+                : "Personal access token (optional)";
+        };
 
         var ok = MakeButton("Add", accent: true);
         var cancel = MakeButton("Cancel");
@@ -730,7 +736,7 @@ public static class Ui
                 return;
             result = new HostingAccount
             {
-                Provider = provider.SelectedIndex == 1 ? "GitLab" : "GitHub",
+                Provider = provider.SelectedIndex switch { 1 => "GitLab", 2 => "Bitbucket", _ => "GitHub" },
                 Username = username.Text!.Trim(),
                 Token = token.Text?.Trim() ?? "",
                 BaseUrl = provider.SelectedIndex == 1 && !string.IsNullOrWhiteSpace(baseUrl.Text)
@@ -751,7 +757,7 @@ public static class Ui
         panel.Children.Add(baseUrl);
         panel.Children.Add(new TextBlock
         {
-            Text = "Without a token only public repositories are listed. The token is stored unencrypted in settings.json.",
+            Text = "Without a token only public repositories are listed. The token is kept in the system credential store (Windows Credential Manager / keychain), not in settings.json.",
             Foreground = Brushes.Gray,
             FontSize = 11,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap

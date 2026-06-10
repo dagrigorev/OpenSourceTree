@@ -127,8 +127,42 @@ public sealed partial class NewTabViewModel : TabViewModelBase
 
     // ---------- Remote repositories (hosting accounts) ----------
 
+    public sealed partial class RemoteRepoItem : ObservableObject
+    {
+        public RemoteRepoItem(RemoteRepo repo)
+        {
+            Repo = repo;
+            _ = LoadAvatarAsync();
+        }
+
+        public RemoteRepo Repo { get; }
+        public string FullName => Repo.FullName;
+        public string CloneUrl => Repo.CloneUrl;
+        public string Description => Repo.Description;
+        public bool IsPrivate => Repo.IsPrivate;
+
+        [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? _avatar;
+        [ObservableProperty] private bool _hasAvatar;
+
+        private async Task LoadAvatarAsync()
+        {
+            var bytes = await HostingService.GetAvatarAsync(Repo.AvatarUrl);
+            if (bytes is null)
+                return;
+            try
+            {
+                Avatar = new Avalonia.Media.Imaging.Bitmap(new System.IO.MemoryStream(bytes));
+                HasAvatar = true;
+            }
+            catch
+            {
+                // not a decodable image (e.g. SVG avatar) — keep the fallback icon
+            }
+        }
+    }
+
     public ObservableCollection<HostingAccount> Accounts { get; } = new();
-    public ObservableCollection<RemoteRepo> RemoteRepos { get; } = new();
+    public ObservableCollection<RemoteRepoItem> RemoteRepos { get; } = new();
     private System.Collections.Generic.List<RemoteRepo> _allRemote = new();
 
     [ObservableProperty] private HostingAccount? _selectedAccount;
@@ -156,9 +190,13 @@ public sealed partial class NewTabViewModel : TabViewModelBase
     private void InitAccounts()
     {
         foreach (var account in _main.Settings.Accounts)
+        {
+            // Tokens live in the OS credential store, not in settings.json.
+            account.Token = CredentialService.Retrieve(account.CredentialKey) ?? "";
             Accounts.Add(account);
+        }
         HasAccounts = Accounts.Count > 0;
-        RemoteStatus = HasAccounts ? "" : "Add a GitHub or GitLab account to browse its repositories.";
+        RemoteStatus = HasAccounts ? "" : "Add a GitHub, GitLab or Bitbucket account to browse its repositories.";
     }
 
     [RelayCommand]
@@ -167,6 +205,7 @@ public sealed partial class NewTabViewModel : TabViewModelBase
         var account = await Ui.ShowAddAccountAsync();
         if (account is null)
             return;
+        CredentialService.Store(account.CredentialKey, account.Token);
         Accounts.Add(account);
         _main.Settings.Accounts.Add(account);
         _main.Settings.Save();
@@ -181,6 +220,7 @@ public sealed partial class NewTabViewModel : TabViewModelBase
             return;
         if (!await Ui.ShowConfirmAsync("Remove account", $"Remove '{account.Display}'?"))
             return;
+        CredentialService.Delete(account.CredentialKey);
         Accounts.Remove(account);
         _main.Settings.Accounts.Remove(account);
         _main.Settings.Save();
@@ -190,7 +230,7 @@ public sealed partial class NewTabViewModel : TabViewModelBase
         {
             _allRemote.Clear();
             ApplyRemoteFilter();
-            RemoteStatus = "Add a GitHub or GitLab account to browse its repositories.";
+            RemoteStatus = "Add a GitHub, GitLab or Bitbucket account to browse its repositories.";
         }
     }
 
@@ -233,12 +273,12 @@ public sealed partial class NewTabViewModel : TabViewModelBase
                 !repo.FullName.Contains(query, StringComparison.OrdinalIgnoreCase) &&
                 !repo.Description.Contains(query, StringComparison.OrdinalIgnoreCase))
                 continue;
-            RemoteRepos.Add(repo);
+            RemoteRepos.Add(new RemoteRepoItem(repo));
         }
     }
 
     /// <summary>Double-click on a remote repo: prefill the Clone form and switch to it.</summary>
-    public void CloneRemote(RemoteRepo? repo)
+    public void CloneRemote(RemoteRepoItem? repo)
     {
         if (repo is null)
             return;

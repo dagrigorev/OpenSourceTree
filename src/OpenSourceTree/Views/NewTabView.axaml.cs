@@ -14,7 +14,7 @@ public partial class NewTabView : UserControl
     private void RemoteRepo_DoubleTapped(object? sender, TappedEventArgs e)
     {
         if (DataContext is NewTabViewModel vm &&
-            RemoteList.SelectedItem is OpenSourceTree.Services.RemoteRepo repo)
+            RemoteList.SelectedItem is NewTabViewModel.RemoteRepoItem repo)
         {
             vm.CloneRemote(repo);
         }

@@ -5,18 +5,27 @@ using System.Text.Json;
 
 namespace OpenSourceTree.Services;
 
-/// <summary>A GitHub / GitLab account used to browse remote repositories.</summary>
+/// <summary>A GitHub / GitLab / Bitbucket account used to browse remote repositories.</summary>
 public sealed class HostingAccount
 {
     public string Provider { get; set; } = "GitHub";
     public string Username { get; set; } = "";
-    /// <summary>Personal access token; empty = anonymous (public repositories only).</summary>
+
+    /// <summary>
+    /// Personal access token (Bitbucket: app password); empty = anonymous (public repositories only).
+    /// Never serialized — it lives in the OS credential store under <see cref="CredentialKey"/>.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Token { get; set; } = "";
+
     /// <summary>Server base URL for self-hosted instances (GitLab); null = the public cloud host.</summary>
     public string? BaseUrl { get; set; }
 
     [System.Text.Json.Serialization.JsonIgnore]
     public string Display => $"{Provider} — {Username}";
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string CredentialKey => $"{Provider}:{Username}@{BaseUrl ?? "default"}";
 }
 
 public sealed class AppSettings

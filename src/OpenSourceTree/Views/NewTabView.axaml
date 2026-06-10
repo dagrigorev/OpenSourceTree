@@ -145,9 +145,14 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" Spacing="10" Margin="2,3">
                                 <Border Width="30" Height="30" CornerRadius="15" Background="#243546"
-                                        VerticalAlignment="Center">
-                                    <Image Source="{x:Static views:Icons.Cloud}" Width="15" Height="15"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        VerticalAlignment="Center" ClipToBounds="True">
+                                    <Panel>
+                                        <Image Source="{x:Static views:Icons.Cloud}" Width="15" Height="15"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               IsVisible="{Binding !HasAvatar}" />
+                                        <Image Source="{Binding Avatar}" Width="30" Height="30"
+                                               Stretch="UniformToFill" IsVisible="{Binding HasAvatar}" />
+                                    </Panel>
                                 </Border>
                                 <StackPanel VerticalAlignment="Center" Spacing="2">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
