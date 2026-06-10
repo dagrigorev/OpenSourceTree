@@ -46,6 +46,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
             }
         }
 
+        // Restored tabs count as "known local repositories" for the New tab's Local list.
+        foreach (var repo in Tabs.OfType<RepositoryViewModel>().Reverse())
+            Settings.TouchRecent(repo.RepoPath);
+
         if (Tabs.Count == 0)
             Tabs.Add(new NewTabViewModel(this));
 

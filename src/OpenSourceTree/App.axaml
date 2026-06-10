@@ -66,6 +66,12 @@
         <Style Selector="Button.toolbar:disabled /template/ ContentPresenter">
             <Setter Property="Opacity" Value="0.45" />
         </Style>
+        <Style Selector="Button.toolbar.selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="#26384A" />
+        </Style>
+        <Style Selector="Button.toolbar.selected TextBlock">
+            <Setter Property="Foreground" Value="#4A9EE0" />
+        </Style>
         <Style Selector="Button.toolbar TextBlock">
             <Setter Property="Foreground" Value="#AFC2D4" />
             <Setter Property="FontSize" Value="11" />

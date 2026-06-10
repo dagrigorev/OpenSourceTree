@@ -1,71 +1,222 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:OpenSourceTree.Views"
              x:Class="OpenSourceTree.Views.NewTabView">
 
-    <ScrollViewer>
-        <StackPanel MaxWidth="620" Margin="0,30" Spacing="18" HorizontalAlignment="Center">
+    <DockPanel>
 
-            <TextBlock Text="Add a repository" FontSize="20" FontWeight="SemiBold"
-                       HorizontalAlignment="Center" Margin="0,0,0,6" />
+        <!-- ===== Top button row: Local / Remote | Clone / Add / New (like SourceTree) ===== -->
+        <Border DockPanel.Dock="Top" Background="#18242F" BorderBrush="#0B141D" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Spacing="2" Margin="10,4">
+                <Button Classes="toolbar" Classes.selected="{Binding IsLocalSelected}"
+                        Command="{Binding SelectSectionCommand}" CommandParameter="Local">
+                    <StackPanel Spacing="3">
+                        <Image Source="{x:Static views:Icons.Workspace}" Width="16" Height="16" />
+                        <TextBlock Text="Local" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="toolbar" Classes.selected="{Binding IsRemoteSelected}"
+                        Command="{Binding SelectSectionCommand}" CommandParameter="Remote">
+                    <StackPanel Spacing="3">
+                        <Image Source="{x:Static views:Icons.Cloud}" Width="16" Height="16" />
+                        <TextBlock Text="Remote" />
+                    </StackPanel>
+                </Button>
 
-            <!-- Clone -->
-            <Border Background="#141E28" CornerRadius="6" Padding="18">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Clone a remote repository" FontWeight="SemiBold" FontSize="14" />
-                    <TextBox Text="{Binding CloneUrl}" Watermark="Source URL (https://… or git@…)" />
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
-                                Command="{Binding BrowseCloneTargetCommand}" />
-                        <TextBox Text="{Binding CloneTarget}" Watermark="Destination path" />
-                    </DockPanel>
-                    <Button Classes="accent" Content="Clone" Padding="20,5" HorizontalAlignment="Right"
-                            Command="{Binding CloneCommand}" />
-                </StackPanel>
-            </Border>
+                <Border Width="1" Background="#2A3A4A" Margin="8,6" />
 
-            <!-- Open -->
-            <Border Background="#141E28" CornerRadius="6" Padding="18">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Open a local repository" FontWeight="SemiBold" FontSize="14" />
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
-                                Command="{Binding BrowseOpenCommand}" />
-                        <TextBox Text="{Binding OpenPath}" Watermark="Repository path" />
-                    </DockPanel>
-                    <Button Classes="accent" Content="Open" Padding="20,5" HorizontalAlignment="Right"
-                            Command="{Binding OpenRepositoryCommand}" />
-                    <TextBlock Text="Recent repositories" Classes="dim" FontSize="11"
-                               IsVisible="{Binding Recent.Count}" Margin="0,4,0,0" />
-                    <ItemsControl ItemsSource="{Binding Recent}">
-                        <ItemsControl.ItemTemplate>
+                <Button Classes="toolbar" Classes.selected="{Binding IsCloneSelected}"
+                        Command="{Binding SelectSectionCommand}" CommandParameter="Clone">
+                    <StackPanel Spacing="3">
+                        <Image Source="{x:Static views:Icons.Pull}" Width="16" Height="16" />
+                        <TextBlock Text="Clone" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="toolbar" Classes.selected="{Binding IsAddSelected}"
+                        Command="{Binding SelectSectionCommand}" CommandParameter="Add">
+                    <StackPanel Spacing="3">
+                        <Image Source="{x:Static views:Icons.Explorer}" Width="16" Height="16" />
+                        <TextBlock Text="Add" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="toolbar" Classes.selected="{Binding IsNewSelected}"
+                        Command="{Binding SelectSectionCommand}" CommandParameter="New">
+                    <StackPanel Spacing="3">
+                        <Image Source="{x:Static views:Icons.Plus}" Width="16" Height="16" />
+                        <TextBlock Text="New" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <Panel>
+
+            <!-- ===== Local repositories ===== -->
+            <DockPanel IsVisible="{Binding IsLocalSelected}" Margin="26,18,26,0">
+                <TextBlock DockPanel.Dock="Top" Text="Local repositories"
+                           FontSize="24" FontWeight="Light" Margin="0,0,0,14" />
+                <TextBox DockPanel.Dock="Top" Text="{Binding LocalFilter}" Watermark="Search"
+                         MaxWidth="560" HorizontalAlignment="Left" MinWidth="420" />
+                <TextBlock DockPanel.Dock="Top" Classes="dim" Margin="2,12,0,0"
+                           Text="Repositories you have opened before appear here. Double-click to open."
+                           IsVisible="{Binding !HasLocalRepos}" />
+
+                <!-- Bottom status bar (like SourceTree's Local view) -->
+                <Border DockPanel.Dock="Bottom" BorderBrush="#0B141D" BorderThickness="0,1,0,0"
+                        Background="#141E28" Margin="-26,10,-26,0" Padding="14,5">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Content="Refresh" FontSize="11" Padding="10,3"
+                                Command="{Binding RefreshLocalCommand}" />
+                        <Button Content="Show in Explorer" FontSize="11" Padding="10,3"
+                                IsEnabled="{Binding HasLocalSelection}"
+                                Command="{Binding OpenLocalInExplorerCommand}" />
+                        <Button Content="Open in Terminal" FontSize="11" Padding="10,3"
+                                IsEnabled="{Binding HasLocalSelection}"
+                                Command="{Binding OpenLocalInTerminalCommand}" />
+                    </StackPanel>
+                </Border>
+
+                <ListBox Name="LocalList" ItemsSource="{Binding LocalRepos}" Margin="0,10,0,0"
+                         SelectedItem="{Binding SelectedLocal}"
+                         MaxWidth="560" HorizontalAlignment="Left" MinWidth="420"
+                         DoubleTapped="LocalRepo_DoubleTapped">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="2,3">
+                                <Border Width="30" Height="30" CornerRadius="15" Background="#243546"
+                                        VerticalAlignment="Center">
+                                    <Image Source="{x:Static views:Icons.Branch}" Width="15" Height="15"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" />
+                                        <Border Background="#243546" CornerRadius="3" Padding="5,1"
+                                                VerticalAlignment="Center" IsVisible="{Binding HasBranch}">
+                                            <TextBlock Text="{Binding Branch}" FontSize="10"
+                                                       Foreground="#9FB4C8" />
+                                        </Border>
+                                        <Ellipse Width="7" Height="7" Fill="#E8A33D"
+                                                 VerticalAlignment="Center" IsVisible="{Binding IsDirty}"
+                                                 ToolTip.Tip="Uncommitted changes" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Path}" Classes="dim" FontSize="11" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- ===== Remote (hosting accounts) ===== -->
+            <DockPanel IsVisible="{Binding IsRemoteSelected}" Margin="26,18,26,18">
+                <TextBlock DockPanel.Dock="Top" Text="Remote repositories"
+                           FontSize="24" FontWeight="Light" Margin="0,0,0,14" />
+
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6">
+                    <ComboBox MinWidth="240" ItemsSource="{Binding Accounts}"
+                              SelectedItem="{Binding SelectedAccount}">
+                        <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <Button Background="Transparent" BorderThickness="0" Padding="4,3"
-                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                        Command="{Binding $parent[UserControl].DataContext.OpenRecentCommand}"
-                                        CommandParameter="{Binding}">
-                                    <TextBlock Text="{Binding}" Foreground="#4A9EE0"
-                                               TextTrimming="CharacterEllipsis" />
-                                </Button>
+                                <TextBlock Text="{Binding Display}" />
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Content="Add Account…" Padding="10,4" Command="{Binding AddAccountCommand}" />
+                    <Button Content="Remove" Padding="10,4" Command="{Binding RemoveAccountCommand}"
+                            IsEnabled="{Binding HasSelectedAccount}" />
+                    <Button Content="Refresh" Padding="10,4" Command="{Binding RefreshRemoteCommand}"
+                            IsEnabled="{Binding HasSelectedAccount}" />
                 </StackPanel>
-            </Border>
 
-            <!-- Create -->
-            <Border Background="#141E28" CornerRadius="6" Padding="18">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Create a new repository" FontWeight="SemiBold" FontSize="14" />
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
-                                Command="{Binding BrowseCreateCommand}" />
-                        <TextBox Text="{Binding CreatePath}" Watermark="Destination path" />
-                    </DockPanel>
-                    <Button Classes="accent" Content="Create" Padding="20,5" HorizontalAlignment="Right"
-                            Command="{Binding CreateCommand}" />
+                <TextBox DockPanel.Dock="Top" Text="{Binding RemoteFilter}" Watermark="Search"
+                         MaxWidth="560" HorizontalAlignment="Left" MinWidth="420" Margin="0,10,0,0" />
+
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,8,0,0">
+                    <ProgressBar IsIndeterminate="True" Width="90" Height="3"
+                                 IsVisible="{Binding IsRemoteLoading}" Foreground="#4A9EE0" />
+                    <TextBlock Classes="dim" Text="{Binding RemoteStatus}" TextWrapping="Wrap" />
                 </StackPanel>
-            </Border>
 
-        </StackPanel>
-    </ScrollViewer>
+                <ListBox Name="RemoteList" ItemsSource="{Binding RemoteRepos}" Margin="0,8,0,0"
+                         DoubleTapped="RemoteRepo_DoubleTapped">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="2,3">
+                                <Border Width="30" Height="30" CornerRadius="15" Background="#243546"
+                                        VerticalAlignment="Center">
+                                    <Image Source="{x:Static views:Icons.Cloud}" Width="15" Height="15"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding FullName}" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" />
+                                        <Border Background="#52453A" CornerRadius="3" Padding="5,1"
+                                                VerticalAlignment="Center" IsVisible="{Binding IsPrivate}">
+                                            <TextBlock Text="private" FontSize="10" Foreground="#E8EEF4" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Description}" Classes="dim" FontSize="11"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="640"
+                                               HorizontalAlignment="Left"
+                                               IsVisible="{Binding Description.Length}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- ===== Clone ===== -->
+            <StackPanel IsVisible="{Binding IsCloneSelected}" Margin="26,18" Spacing="10"
+                        MaxWidth="620" HorizontalAlignment="Left">
+                <TextBlock Text="Clone" FontSize="24" FontWeight="Light" Margin="0,0,0,6" />
+                <TextBlock Text="Source path / URL" Classes="dim" FontSize="12" />
+                <TextBox Text="{Binding CloneUrl}" Watermark="https://… or git@…" />
+                <TextBlock Text="Destination path" Classes="dim" FontSize="12" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
+                            Command="{Binding BrowseCloneParentCommand}" />
+                    <TextBox Text="{Binding CloneParent}" Watermark="Parent folder for the clone" />
+                </DockPanel>
+                <TextBlock Text="Name" Classes="dim" FontSize="12" />
+                <TextBox Text="{Binding CloneName}" Watermark="Folder name" MaxWidth="300"
+                         HorizontalAlignment="Left" MinWidth="300" />
+                <TextBlock Classes="dim" FontSize="11" Text="{Binding CloneTargetPreview, StringFormat='Will clone into: {0}'}" />
+                <Button Classes="accent" Content="Clone" Padding="22,5" Margin="0,8,0,0"
+                        HorizontalAlignment="Left" Command="{Binding CloneCommand}" />
+            </StackPanel>
+
+            <!-- ===== Add (existing local repository) ===== -->
+            <StackPanel IsVisible="{Binding IsAddSelected}" Margin="26,18" Spacing="10"
+                        MaxWidth="620" HorizontalAlignment="Left">
+                <TextBlock Text="Add" FontSize="24" FontWeight="Light" Margin="0,0,0,6" />
+                <TextBlock Text="Working copy path" Classes="dim" FontSize="12" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
+                            Command="{Binding BrowseAddCommand}" />
+                    <TextBox Text="{Binding AddPath}" Watermark="Path to an existing repository" />
+                </DockPanel>
+                <Button Classes="accent" Content="Add" Padding="22,5" Margin="0,8,0,0"
+                        HorizontalAlignment="Left" Command="{Binding AddRepositoryCommand}" />
+            </StackPanel>
+
+            <!-- ===== New (create repository) ===== -->
+            <StackPanel IsVisible="{Binding IsNewSelected}" Margin="26,18" Spacing="10"
+                        MaxWidth="620" HorizontalAlignment="Left">
+                <TextBlock Text="Create a new repository" FontSize="24" FontWeight="Light" Margin="0,0,0,6" />
+                <TextBlock Text="Destination path" Classes="dim" FontSize="12" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
+                            Command="{Binding BrowseCreateCommand}" />
+                    <TextBox Text="{Binding CreatePath}" Watermark="Folder for the new repository" />
+                </DockPanel>
+                <Button Classes="accent" Content="Create" Padding="22,5" Margin="0,8,0,0"
+                        HorizontalAlignment="Left" Command="{Binding CreateCommand}" />
+            </StackPanel>
+
+        </Panel>
+    </DockPanel>
 </UserControl>

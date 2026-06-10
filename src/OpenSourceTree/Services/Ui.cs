@@ -699,6 +699,74 @@ public static class Ui
         return result;
     }
 
+    // ---------- Hosting accounts (New tab -> Remote) ----------
+
+    public static async Task<HostingAccount?> ShowAddAccountAsync()
+    {
+        var owner = MainWindow;
+        if (owner is null)
+            return null;
+
+        var dialog = MakeDialog("Add hosting account", 480, double.NaN);
+        dialog.SizeToContent = SizeToContent.Height;
+        HostingAccount? result = null;
+
+        var provider = new ComboBox
+        {
+            ItemsSource = new[] { "GitHub", "GitLab" },
+            SelectedIndex = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        var username = new TextBox { Watermark = "Username" };
+        var token = new TextBox { Watermark = "Personal access token (optional)", PasswordChar = '•' };
+        var baseUrl = new TextBox { Watermark = "https://gitlab.example.com (GitLab only)", IsEnabled = false };
+        provider.SelectionChanged += (_, _) => baseUrl.IsEnabled = provider.SelectedIndex == 1;
+
+        var ok = MakeButton("Add", accent: true);
+        var cancel = MakeButton("Cancel");
+        ok.Click += (_, _) =>
+        {
+            if (string.IsNullOrWhiteSpace(username.Text))
+                return;
+            result = new HostingAccount
+            {
+                Provider = provider.SelectedIndex == 1 ? "GitLab" : "GitHub",
+                Username = username.Text!.Trim(),
+                Token = token.Text?.Trim() ?? "",
+                BaseUrl = provider.SelectedIndex == 1 && !string.IsNullOrWhiteSpace(baseUrl.Text)
+                    ? baseUrl.Text!.Trim() : null
+            };
+            dialog.Close();
+        };
+        cancel.Click += (_, _) => dialog.Close();
+
+        var panel = new StackPanel { Margin = new Thickness(20), Spacing = 10 };
+        panel.Children.Add(new TextBlock { Text = "Provider", Foreground = Brushes.Gray, FontSize = 12 });
+        panel.Children.Add(provider);
+        panel.Children.Add(new TextBlock { Text = "Username", Foreground = Brushes.Gray, FontSize = 12 });
+        panel.Children.Add(username);
+        panel.Children.Add(new TextBlock { Text = "Personal access token", Foreground = Brushes.Gray, FontSize = 12 });
+        panel.Children.Add(token);
+        panel.Children.Add(new TextBlock { Text = "Server URL (self-hosted GitLab)", Foreground = Brushes.Gray, FontSize = 12 });
+        panel.Children.Add(baseUrl);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Without a token only public repositories are listed. The token is stored unencrypted in settings.json.",
+            Foreground = Brushes.Gray,
+            FontSize = 11,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap
+        });
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(cancel);
+        buttons.Children.Add(ok);
+        panel.Children.Add(buttons);
+        dialog.Content = panel;
+        dialog.Opened += (_, _) => username.Focus();
+
+        await dialog.ShowDialog(owner);
+        return result;
+    }
+
     // ---------- Application options (Tools -> Options, like SourceTree) ----------
 
     /// <summary>Shows the global Options dialog. Returns true when settings were changed and saved.</summary>

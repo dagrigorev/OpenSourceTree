@@ -5,6 +5,20 @@ using System.Text.Json;
 
 namespace OpenSourceTree.Services;
 
+/// <summary>A GitHub / GitLab account used to browse remote repositories.</summary>
+public sealed class HostingAccount
+{
+    public string Provider { get; set; } = "GitHub";
+    public string Username { get; set; } = "";
+    /// <summary>Personal access token; empty = anonymous (public repositories only).</summary>
+    public string Token { get; set; } = "";
+    /// <summary>Server base URL for self-hosted instances (GitLab); null = the public cloud host.</summary>
+    public string? BaseUrl { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string Display => $"{Provider} — {Username}";
+}
+
 public sealed class AppSettings
 {
     private static AppSettings? _instance;
@@ -32,6 +46,9 @@ public sealed class AppSettings
 
     /// <summary>Explicit path to the git executable; null/empty = use PATH.</summary>
     public string? GitExecutablePath { get; set; }
+
+    /// <summary>Hosting accounts shown in the New tab's Remote view.</summary>
+    public List<HostingAccount> Accounts { get; set; } = new();
 
     private static string SettingsDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "OpenSourceTree");

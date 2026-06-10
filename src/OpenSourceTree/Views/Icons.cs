@@ -42,4 +42,5 @@ public static class Icons
     public static IImage Cloud => Get("cloud");
     public static IImage GitFlow => Get("gitflow");
     public static IImage Submodule => Get("submodule");
+    public static IImage Plus => Get("plus");
 }

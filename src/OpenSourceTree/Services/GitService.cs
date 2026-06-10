@@ -29,6 +29,27 @@ public sealed class GitService : IDisposable
 
     public static bool IsRepository(string path) => Repository.Discover(path) is not null;
 
+    /// <summary>Cheap one-shot look at a repository: current branch and whether the working copy is dirty.</summary>
+    public static (string Branch, bool IsDirty)? ProbeRepository(string path)
+    {
+        try
+        {
+            var discovered = Repository.Discover(path);
+            if (discovered is null)
+                return null;
+            using var repo = new Repository(discovered);
+            string branch = repo.Info.IsHeadDetached
+                ? repo.Head.Tip?.Sha[..8] ?? "detached"
+                : repo.Head.FriendlyName;
+            bool dirty = repo.RetrieveStatus(new StatusOptions { IncludeUntracked = true }).IsDirty;
+            return (branch, dirty);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public static void Init(string path) => Repository.Init(path);
 
     public void Dispose() => _repo.Dispose();
