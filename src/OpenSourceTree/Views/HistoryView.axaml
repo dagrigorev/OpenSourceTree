@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:OpenSourceTree.Views"
+             x:Class="OpenSourceTree.Views.HistoryView">
+
+    <Grid RowDefinitions="Auto,Auto,3*,4,2*">
+
+        <!-- Filter / sort row -->
+        <Border Grid.Row="0" Background="#18242F" BorderBrush="#0B141D" BorderThickness="0,0,0,1"
+                Padding="8,5">
+            <DockPanel VerticalAlignment="Center">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="Jump to:" Classes="dim" VerticalAlignment="Center" />
+                    <TextBox Name="JumpBox" Width="210" MinHeight="26" Padding="6,0" FontSize="12"
+                             VerticalAlignment="Center"
+                             Text="{Binding JumpToText}" Watermark="message, author or SHA"
+                             KeyDown="JumpBox_KeyDown" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <ComboBox Classes="filter" SelectedIndex="{Binding BranchFilterIndex, Mode=TwoWay}" MinWidth="125">
+                        <ComboBoxItem Content="All branches" />
+                        <ComboBoxItem Content="Current branch" />
+                    </ComboBox>
+                    <CheckBox Content="Show remote branches" IsChecked="{Binding ShowRemoteBranches}"
+                              VerticalAlignment="Center" MinHeight="26" />
+                    <ComboBox Classes="filter" SelectedIndex="{Binding HistorySortIndex, Mode=TwoWay}" MinWidth="150">
+                        <ComboBoxItem Content="Sort by date" />
+                        <ComboBoxItem Content="Sort topologically" />
+                    </ComboBox>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Column headers -->
+        <Border Grid.Row="1" Background="#18242F" BorderBrush="#0B141D" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,*,150,170,90" Margin="4,4">
+                <Border Grid.Column="0" Width="{Binding GraphColumnWidth}">
+                    <TextBlock Text="Graph" Classes="dim" FontSize="11" />
+                </Border>
+                <TextBlock Grid.Column="1" Text="Description" Classes="dim" FontSize="11" Margin="6,0,0,0" />
+                <TextBlock Grid.Column="2" Text="Date" Classes="dim" FontSize="11" />
+                <TextBlock Grid.Column="3" Text="Author" Classes="dim" FontSize="11" />
+                <TextBlock Grid.Column="4" Text="Commit" Classes="dim" FontSize="11" />
+            </Grid>
+        </Border>
+
+        <!-- Commit list -->
+        <ListBox Grid.Row="2" Name="HistoryList"
+                 ItemsSource="{Binding History}"
+                 SelectedItem="{Binding SelectedCommit}">
+            <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="4,0" />
+                    <Setter Property="MinHeight" Value="24" />
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,*,150,170,90" Height="24" Background="Transparent">
+                        <Grid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Checkout this commit…" Command="{Binding CheckoutCommand}" />
+                                <MenuItem Header="Tag this commit…" Command="{Binding TagCommand}" />
+                                <Separator />
+                                <MenuItem Header="Reset current branch to this commit (soft)…" Command="{Binding ResetSoftCommand}" />
+                                <MenuItem Header="Reset current branch to this commit (mixed)…" Command="{Binding ResetMixedCommand}" />
+                                <MenuItem Header="Reset current branch to this commit (hard)…" Command="{Binding ResetHardCommand}" />
+                                <Separator />
+                                <MenuItem Header="Rebase children of this commit interactively…" Command="{Binding RebaseInteractiveCommand}" />
+                                <Separator />
+                                <MenuItem Header="Copy SHA" Command="{Binding CopyShaCommand}" />
+                            </ContextMenu>
+                        </Grid.ContextMenu>
+                        <views:CommitGraphControl Grid.Column="0" Row="{Binding Graph}"
+                                                  Width="{Binding $parent[ListBox].DataContext.GraphColumnWidth}"
+                                                  VerticalAlignment="Stretch" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                    Margin="6,0,0,0" VerticalAlignment="Center">
+                            <ItemsControl ItemsSource="{Binding Badges}" IsVisible="{Binding HasBadges}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="3" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding Background}" CornerRadius="3" Padding="5,1">
+                                            <TextBlock Text="{Binding Text}" FontSize="10"
+                                                       Foreground="{Binding Foreground}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding Message}" TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding DateText}" Classes="dim"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding AuthorName}" Classes="dim"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="{Binding ShortSha}" Classes="dim"
+                                   FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="11"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <GridSplitter Grid.Row="3" ResizeDirection="Rows" />
+
+        <!-- Commit details: metadata + files | diff -->
+        <Grid Grid.Row="4" ColumnDefinitions="2*,4,3*" IsVisible="{Binding HasCommitSelected}">
+            <Grid Grid.Column="0" RowDefinitions="Auto,*">
+                <Border Grid.Row="0" Background="#141E28" Padding="10,8">
+                    <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Commit:" Classes="dim" FontSize="11" />
+                            <TextBlock Text="{Binding DetailSha}" FontSize="11"
+                                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Parents:" Classes="dim" FontSize="11" />
+                            <TextBlock Text="{Binding DetailParents}" FontSize="11" Foreground="#4A9EE0"
+                                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Author:" Classes="dim" FontSize="11" />
+                            <TextBlock Text="{Binding DetailAuthor}" FontSize="11" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Date:" Classes="dim" FontSize="11" />
+                            <TextBlock Text="{Binding DetailDate}" FontSize="11" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Refs:" Classes="dim" FontSize="11" />
+                            <TextBlock Text="{Binding DetailRefs}" FontSize="11" Foreground="#B58A2E" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding DetailMessage}" TextWrapping="Wrap"
+                                   Margin="0,6,0,0" MaxHeight="80" />
+                    </StackPanel>
+                </Border>
+                <Grid Grid.Row="1" RowDefinitions="Auto,*">
+                    <Border Background="#141E28" Padding="10,2,10,6">
+                        <TextBlock Classes="dim" FontSize="11"
+                                   Text="{Binding CommitFiles.Count, StringFormat='Sorted by status   ({0} files)'}" />
+                    </Border>
+                <ListBox Grid.Row="1" ItemsSource="{Binding CommitFiles}"
+                         SelectedItem="{Binding SelectedCommitFile}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Border Background="{Binding StatusBrush}" CornerRadius="2" Width="16" Height="16">
+                                    <TextBlock Text="{Binding StatusChar}" FontSize="10" FontWeight="Bold"
+                                               Foreground="#10161E" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                                <TextBlock Text="{Binding Path}" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                </Grid>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+            <Panel Grid.Column="2">
+                <views:DiffViewer Lines="{Binding CommitDiffLines}" />
+                <TextBlock Text="Select a file to view the diff" Classes="dim"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           IsVisible="{Binding !CommitDiffLines.Count}" />
+            </Panel>
+        </Grid>
+    </Grid>
+</UserControl>

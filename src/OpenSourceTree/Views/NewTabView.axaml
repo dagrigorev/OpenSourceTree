@@ -1,0 +1,71 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OpenSourceTree.Views.NewTabView">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="620" Margin="0,30" Spacing="18" HorizontalAlignment="Center">
+
+            <TextBlock Text="Add a repository" FontSize="20" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" Margin="0,0,0,6" />
+
+            <!-- Clone -->
+            <Border Background="#141E28" CornerRadius="6" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Clone a remote repository" FontWeight="SemiBold" FontSize="14" />
+                    <TextBox Text="{Binding CloneUrl}" Watermark="Source URL (https://… or git@…)" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
+                                Command="{Binding BrowseCloneTargetCommand}" />
+                        <TextBox Text="{Binding CloneTarget}" Watermark="Destination path" />
+                    </DockPanel>
+                    <Button Classes="accent" Content="Clone" Padding="20,5" HorizontalAlignment="Right"
+                            Command="{Binding CloneCommand}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Open -->
+            <Border Background="#141E28" CornerRadius="6" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Open a local repository" FontWeight="SemiBold" FontSize="14" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
+                                Command="{Binding BrowseOpenCommand}" />
+                        <TextBox Text="{Binding OpenPath}" Watermark="Repository path" />
+                    </DockPanel>
+                    <Button Classes="accent" Content="Open" Padding="20,5" HorizontalAlignment="Right"
+                            Command="{Binding OpenRepositoryCommand}" />
+                    <TextBlock Text="Recent repositories" Classes="dim" FontSize="11"
+                               IsVisible="{Binding Recent.Count}" Margin="0,4,0,0" />
+                    <ItemsControl ItemsSource="{Binding Recent}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Background="Transparent" BorderThickness="0" Padding="4,3"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                        Command="{Binding $parent[UserControl].DataContext.OpenRecentCommand}"
+                                        CommandParameter="{Binding}">
+                                    <TextBlock Text="{Binding}" Foreground="#4A9EE0"
+                                               TextTrimming="CharacterEllipsis" />
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Create -->
+            <Border Background="#141E28" CornerRadius="6" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Create a new repository" FontWeight="SemiBold" FontSize="14" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Browse…" Margin="6,0,0,0"
+                                Command="{Binding BrowseCreateCommand}" />
+                        <TextBox Text="{Binding CreatePath}" Watermark="Destination path" />
+                    </DockPanel>
+                    <Button Classes="accent" Content="Create" Padding="20,5" HorizontalAlignment="Right"
+                            Command="{Binding CreateCommand}" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

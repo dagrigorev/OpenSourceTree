@@ -1,0 +1,11 @@
+.claude/
+
+# Build outputs
+bin/
+obj/
+dist/
+
+# IDE
+.vs/
+.idea/
+*.user

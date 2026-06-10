@@ -1,0 +1,323 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:OpenSourceTree.Views"
+             x:Class="OpenSourceTree.Views.RepositoryView">
+
+    <DockPanel>
+
+        <!-- ===== Toolbar ===== -->
+        <Border DockPanel.Dock="Top" Background="#18242F" BorderBrush="#0B141D" BorderThickness="0,0,0,1">
+            <DockPanel Margin="6,4">
+                <!-- right-aligned tools -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                    <Button Classes="toolbar" Command="{Binding GitFlowCommand}" ToolTip.Tip="Git Flow: start or finish feature / release / hotfix branches">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.GitFlow}" Width="16" Height="16" />
+                            <TextBlock Text="Git Flow" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding OpenTerminalCommand}" ToolTip.Tip="Open a terminal in this repository">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Terminal}" Width="16" Height="16" />
+                            <TextBlock Text="Terminal" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding OpenExplorerCommand}" ToolTip.Tip="Open in file manager">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Explorer}" Width="16" Height="16" />
+                            <TextBlock Text="Explorer" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Repository settings">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Settings}" Width="16" Height="16" />
+                            <TextBlock Text="Settings" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- main actions -->
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="toolbar" Command="{Binding ShowCommitViewCommand}" ToolTip.Tip="Commit pending changes">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Commit}" Width="16" Height="16" />
+                            <TextBlock Text="Commit" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding PullCommand}" ToolTip.Tip="Pull from remote">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Pull}" Width="16" Height="16" />
+                            <TextBlock Text="Pull" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding PushCommand}" ToolTip.Tip="Push to remote">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Push}" Width="16" Height="16" />
+                            <TextBlock Text="Push" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding FetchCommand}" ToolTip.Tip="Fetch from all remotes">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Fetch}" Width="16" Height="16" />
+                            <TextBlock Text="Fetch" />
+                        </StackPanel>
+                    </Button>
+
+                    <Border Width="1" Background="#2A3A4A" Margin="4,6" />
+
+                    <Button Classes="toolbar" Command="{Binding NewBranchCommand}" ToolTip.Tip="Create a new branch">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Branch}" Width="16" Height="16" />
+                            <TextBlock Text="Branch" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding MergeCommand}" ToolTip.Tip="Merge a branch into the current branch">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Merge}" Width="16" Height="16" />
+                            <TextBlock Text="Merge" />
+                        </StackPanel>
+                    </Button>
+
+                    <Border Width="1" Background="#2A3A4A" Margin="4,6" />
+
+                    <Button Classes="toolbar" Command="{Binding StashChangesCommand}" ToolTip.Tip="Stash working copy changes">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Stash}" Width="16" Height="16" />
+                            <TextBlock Text="Stash" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding DiscardAllCommand}" ToolTip.Tip="Discard all unstaged changes">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Discard}" Width="16" Height="16" />
+                            <TextBlock Text="Discard" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding NewTagCommand}" ToolTip.Tip="Tag the current commit">
+                        <StackPanel Spacing="3">
+                            <Image Source="{x:Static views:Icons.Tag}" Width="16" Height="16" />
+                            <TextBlock Text="Tag" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2"
+                     IsVisible="{Binding IsBusy}" Background="Transparent" Foreground="#4A9EE0" />
+
+        <!-- ===== Sidebar + content ===== -->
+        <Grid ColumnDefinitions="230,4,*">
+
+            <Border Grid.Column="0" Background="#131D27">
+                <ScrollViewer>
+                    <StackPanel Margin="6,8" Spacing="2">
+
+                        <StackPanel Orientation="Horizontal" Spacing="7" Margin="8,2,0,4">
+                            <Image Source="{x:Static views:Icons.Workspace}" Width="14" Height="14" />
+                            <TextBlock Classes="sectionHeader" Text="WORKSPACE" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Button Classes="navItem" Classes.selected="{Binding IsFileStatusNavSelected}"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="FileStatus">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Right" Background="#2E74B5" CornerRadius="8"
+                                        Padding="6,1" IsVisible="{Binding HasPending}">
+                                    <TextBlock Text="{Binding PendingCount}" FontSize="10" Foreground="White" />
+                                </Border>
+                                <TextBlock Text="File status" />
+                            </DockPanel>
+                        </Button>
+                        <Button Classes="navItem" Classes.selected="{Binding IsHistoryNavSelected}"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="History">
+                            <TextBlock Text="History" />
+                        </Button>
+                        <Button Classes="navItem" Classes.selected="{Binding IsSearchNavSelected}"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Search">
+                            <TextBlock Text="Search" />
+                        </Button>
+
+                        <TextBox Text="{Binding SidebarFilter}" Watermark="Filter" Margin="2,8,2,2"
+                                 Padding="6,3" FontSize="12" />
+
+                        <ToggleButton Classes="sectionToggle" Name="BranchesToggle" IsChecked="True" Margin="0,6,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Path Classes="chev" Stroke="#7E92A5" StrokeThickness="1.3" StrokeLineCap="Round"
+                                      StrokeJoin="Round" Width="6" Height="10" Stretch="None" Data="M1,1 L5,5 L1,9" />
+                                <Image Source="{x:Static views:Icons.Branch}" Width="13" Height="13" />
+                                <TextBlock Classes="sectionHeader" Text="BRANCHES" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <StackPanel IsVisible="{Binding #BranchesToggle.IsChecked}">
+                            <ItemsControl ItemsSource="{Binding Branches}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="sideItem" Classes.selected="{Binding IsSelected}"
+                                                Padding="22,3,8,3"
+                                                PointerPressed="SidebarItem_PointerPressed"
+                                                DoubleTapped="Branch_DoubleTapped">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Checkout" Command="{Binding CheckoutCommand}" />
+                                                    <MenuItem Header="Merge into current branch" Command="{Binding MergeCommand}" />
+                                                    <Separator />
+                                                    <MenuItem Header="Copy branch name" Command="{Binding CopyNameCommand}" />
+                                                    <MenuItem Header="Delete…" Command="{Binding DeleteCommand}" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" Background="#243546" CornerRadius="7"
+                                                        Padding="5,1" IsVisible="{Binding HasAheadBehind}">
+                                                    <TextBlock Text="{Binding AheadBehind}" FontSize="10" Foreground="#9FB4C8" />
+                                                </Border>
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <TextBlock Text="○" FontSize="10" Foreground="#4A9EE0"
+                                                               VerticalAlignment="Center" IsVisible="{Binding IsCurrent}" />
+                                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                               FontWeight="{Binding IsCurrent, Converter={x:Static views:Converters.BoldIfTrue}}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <ToggleButton Classes="sectionToggle" Name="TagsToggle" IsChecked="False">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Path Classes="chev" Stroke="#7E92A5" StrokeThickness="1.3" StrokeLineCap="Round"
+                                      StrokeJoin="Round" Width="6" Height="10" Stretch="None" Data="M1,1 L5,5 L1,9" />
+                                <Image Source="{x:Static views:Icons.Tag}" Width="13" Height="13" />
+                                <TextBlock Classes="sectionHeader" Text="TAGS" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <StackPanel IsVisible="{Binding #TagsToggle.IsChecked}">
+                            <ItemsControl ItemsSource="{Binding Tags}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="sideItem" Classes.selected="{Binding IsSelected}"
+                                                Padding="22,3,8,3"
+                                                PointerPressed="SidebarItem_PointerPressed">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Delete…" Command="{Binding DeleteCommand}" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <ToggleButton Classes="sectionToggle" Name="RemotesToggle" IsChecked="False">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Path Classes="chev" Stroke="#7E92A5" StrokeThickness="1.3" StrokeLineCap="Round"
+                                      StrokeJoin="Round" Width="6" Height="10" Stretch="None" Data="M1,1 L5,5 L1,9" />
+                                <Image Source="{x:Static views:Icons.Cloud}" Width="13" Height="13" />
+                                <TextBlock Classes="sectionHeader" Text="REMOTES" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <StackPanel IsVisible="{Binding #RemotesToggle.IsChecked}">
+                            <ItemsControl ItemsSource="{Binding Remotes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" Margin="22,3,8,3" FontWeight="SemiBold"
+                                                       ToolTip.Tip="{Binding Url}" />
+                                            <ItemsControl ItemsSource="{Binding Branches}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Classes="sideItem" Classes.selected="{Binding IsSelected}"
+                                                                Padding="34,2,8,2"
+                                                                PointerPressed="SidebarItem_PointerPressed"
+                                                                DoubleTapped="RemoteBranch_DoubleTapped">
+                                                            <Border.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="Checkout" Command="{Binding CheckoutCommand}" />
+                                                                </ContextMenu>
+                                                            </Border.ContextMenu>
+                                                            <TextBlock Text="{Binding Name}" Classes="dim"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <ToggleButton Classes="sectionToggle" Name="StashesToggle" IsChecked="False">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Path Classes="chev" Stroke="#7E92A5" StrokeThickness="1.3" StrokeLineCap="Round"
+                                      StrokeJoin="Round" Width="6" Height="10" Stretch="None" Data="M1,1 L5,5 L1,9" />
+                                <Image Source="{x:Static views:Icons.Stash}" Width="13" Height="13" />
+                                <TextBlock Classes="sectionHeader" Text="STASHES" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <StackPanel IsVisible="{Binding #StashesToggle.IsChecked}">
+                            <ItemsControl ItemsSource="{Binding Stashes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="sideItem" Classes.selected="{Binding IsSelected}"
+                                                Padding="22,3,8,3" ToolTip.Tip="{Binding DateText}"
+                                                PointerPressed="SidebarItem_PointerPressed">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Apply" Command="{Binding ApplyCommand}" />
+                                                    <MenuItem Header="Apply and delete (pop)" Command="{Binding PopCommand}" />
+                                                    <Separator />
+                                                    <MenuItem Header="Delete…" Command="{Binding DropCommand}" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <ToggleButton Classes="sectionToggle" Name="SubmodulesToggle" IsChecked="False">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Path Classes="chev" Stroke="#7E92A5" StrokeThickness="1.3" StrokeLineCap="Round"
+                                      StrokeJoin="Round" Width="6" Height="10" Stretch="None" Data="M1,1 L5,5 L1,9" />
+                                <Image Source="{x:Static views:Icons.Submodule}" Width="13" Height="13" />
+                                <TextBlock Classes="sectionHeader" Text="SUBMODULES" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <StackPanel IsVisible="{Binding #SubmodulesToggle.IsChecked}">
+                            <ItemsControl ItemsSource="{Binding Submodules}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="sideItem" Classes.selected="{Binding IsSelected}"
+                                                Padding="22,3,8,3" ToolTip.Tip="{Binding PathText}"
+                                                PointerPressed="SidebarItem_PointerPressed"
+                                                DoubleTapped="Submodule_DoubleTapped">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Open repository" Command="{Binding OpenCommand}" />
+                                                    <MenuItem Header="Update (init + recursive)" Command="{Binding UpdateCommand}" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+            <Panel Grid.Column="2" Background="#10161E">
+                <views:HistoryView IsVisible="{Binding IsHistorySelected}" />
+                <views:FileStatusView IsVisible="{Binding IsFileStatusSelected}" />
+                <views:SearchView IsVisible="{Binding IsSearchSelected}" />
+            </Panel>
+        </Grid>
+    </DockPanel>
+</UserControl>

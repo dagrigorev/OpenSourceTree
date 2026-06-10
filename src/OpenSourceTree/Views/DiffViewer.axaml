@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OpenSourceTree.Views.DiffViewer"
+             Name="Root">
+    <Panel Background="#10161E">
+        <ListBox ItemsSource="{Binding #Root.Lines}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+            <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="MinHeight" Value="17" />
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{Binding Background}">
+                        <Grid ColumnDefinitions="36,36,8,*">
+                            <TextBlock Grid.Column="0" Text="{Binding OldNo}" Classes="dim"
+                                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="11"
+                                       HorizontalAlignment="Right" Margin="0,1,4,0" />
+                            <TextBlock Grid.Column="1" Text="{Binding NewNo}" Classes="dim"
+                                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="11"
+                                       HorizontalAlignment="Right" Margin="0,1,4,0" />
+                            <TextBlock Grid.Column="3" Text="{Binding Text}"
+                                       Foreground="{Binding Foreground}"
+                                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Panel>
+</UserControl>

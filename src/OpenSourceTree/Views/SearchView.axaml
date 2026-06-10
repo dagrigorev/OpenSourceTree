@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OpenSourceTree.Views.SearchView">
+
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Background="#18242F" Padding="10,8">
+            <TextBox Text="{Binding SearchText}" Watermark="Search commit messages, authors or SHA…"
+                     MaxWidth="520" HorizontalAlignment="Left" MinWidth="380" />
+        </Border>
+
+        <ListBox Grid.Row="1" Name="ResultsList" ItemsSource="{Binding SearchResults}"
+                 DoubleTapped="Results_DoubleTapped">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="*,150,170,90" Height="24">
+                        <TextBlock Grid.Column="0" Text="{Binding Message}" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding DateText}" Classes="dim"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding AuthorName}" Classes="dim"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding ShortSha}" Classes="dim"
+                                   FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="11"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>

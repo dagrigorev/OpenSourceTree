@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:OpenSourceTree.Views"
+             x:Class="OpenSourceTree.Views.FileStatusView">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Pending files sort row -->
+        <Border Grid.Row="0" Background="#18242F" BorderBrush="#0B141D" BorderThickness="0,0,0,1"
+                Padding="8,5">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <ComboBox Classes="filter" SelectedIndex="{Binding FileSortIndex, Mode=TwoWay}" MinWidth="240">
+                    <ComboBoxItem Content="Pending files, sorted by file status" />
+                    <ComboBoxItem Content="Pending files, sorted by path" />
+                    <ComboBoxItem Content="Pending files, sorted by file name" />
+                </ComboBox>
+                <TextBlock Classes="dim" VerticalAlignment="Center"
+                           Text="{Binding PendingCount, StringFormat='({0} files)'}" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="2*,4,3*">
+
+            <!-- Staged / unstaged lists -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,*,4,Auto,*">
+
+                <Border Grid.Row="0" Background="#18242F" Padding="8,5">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Unstage All" FontSize="11" Padding="8,2"
+                                Command="{Binding UnstageAllCommand}" />
+                        <TextBlock Text="Staged files" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+                <ListBox Grid.Row="1" ItemsSource="{Binding StagedFiles}"
+                         SelectedItem="{Binding SelectedStagedFile}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Unstage" Command="{Binding ToggleStageCommand}" />
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <CheckBox IsChecked="True" Command="{Binding ToggleStageCommand}"
+                                          Padding="0" MinWidth="0" />
+                                <Border Background="{Binding StatusBrush}" CornerRadius="2" Width="16" Height="16"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StatusChar}" FontSize="10" FontWeight="Bold"
+                                               Foreground="#10161E" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                                <TextBlock Text="{Binding Path}" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <GridSplitter Grid.Row="2" ResizeDirection="Rows" />
+
+                <Border Grid.Row="3" Background="#18242F" Padding="8,5">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Stage All" FontSize="11" Padding="8,2"
+                                Command="{Binding StageAllCommand}" />
+                        <TextBlock Text="Unstaged files" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+                <ListBox Grid.Row="4" ItemsSource="{Binding UnstagedFiles}"
+                         SelectedItem="{Binding SelectedUnstagedFile}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Stage" Command="{Binding ToggleStageCommand}" />
+                                        <Separator />
+                                        <MenuItem Header="Discard changes…" Command="{Binding DiscardCommand}" />
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <CheckBox IsChecked="False" Command="{Binding ToggleStageCommand}"
+                                          Padding="0" MinWidth="0" />
+                                <Border Background="{Binding StatusBrush}" CornerRadius="2" Width="16" Height="16"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StatusChar}" FontSize="10" FontWeight="Bold"
+                                               Foreground="#10161E" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                                <TextBlock Text="{Binding Path}" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+            <Panel Grid.Column="2">
+                <views:DiffViewer Lines="{Binding WorkDiffLines}" />
+                <TextBlock Text="Select a file to view the diff" Classes="dim"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           IsVisible="{Binding !WorkDiffLines.Count}" />
+            </Panel>
+        </Grid>
+
+        <!-- Commit box -->
+        <Border Grid.Row="2" Background="#141E28" BorderBrush="#0B141D" BorderThickness="0,1,0,0"
+                Padding="10,8">
+            <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Width="22" Height="22" CornerRadius="11" Background="#2E74B5">
+                        <TextBlock Text="@" Foreground="White" FontSize="11"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding CommitAuthorText}" FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBox Text="{Binding CommitMessage}" AcceptsReturn="True" Height="64"
+                         Watermark="Commit message" TextWrapping="Wrap" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="accent" Content="Commit"
+                            Padding="16,5" Command="{Binding CommitCommand}" />
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <CheckBox Content="Push changes immediately" IsChecked="{Binding PushAfterCommit}" />
+                        <CheckBox Content="Amend latest commit" IsChecked="{Binding AmendCommit}" />
+                    </StackPanel>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
