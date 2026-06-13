@@ -98,6 +98,27 @@ Self-contained builds (no .NET runtime needed on the target machine) land in `di
 
 Cross-publishing works too — e.g. `./build.sh linux-x64` on a Windows machine produces a Linux build.
 
+### Windows installer (MSI)
+
+A WiX-based installer packages the self-contained build, installs to `%ProgramFiles%\OpenSourceTree`,
+and adds Start Menu + Desktop shortcuts (with uninstall via Add/Remove Programs).
+
+One-time tooling (free WiX v5 dotnet tool):
+
+```powershell
+dotnet tool install --global wix --version 5.0.2
+wix extension add -g WixToolset.UI.wixext/5.0.2
+```
+
+Then build the MSI:
+
+```powershell
+.\installer\build-installer.ps1               # publishes + builds dist\OpenSourceTree-<version>-win-x64.msi
+.\installer\build-installer.ps1 -SkipPublish  # reuse an existing dist\win-x64 publish
+```
+
+The installer source lives in `installer\Product.wxs`.
+
 ## Architecture
 
 ```

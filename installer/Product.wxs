@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OpenSourceTree Windows installer (WiX v5).
+  Harvests the self-contained publish folder and adds Start Menu + Desktop shortcuts.
+  Build with installer\build-installer.ps1 (passes the PublishDir variable).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="OpenSourceTree"
+           Manufacturer="OpenSourceTree"
+           Version="0.1.0.0"
+           UpgradeCode="b1e9c2a4-6f3d-4b8e-9a1c-7d2e5f0a3b6c"
+           Compressed="yes"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Application icon for Add/Remove Programs and the shortcuts -->
+    <Icon Id="AppIcon" SourceFile="$(var.PublishDir)\OpenSourceTree.exe" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/dagrigorev/OpenSourceTree" />
+
+    <!-- Install location: %ProgramFiles%\OpenSourceTree -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="OpenSourceTree" />
+    </StandardDirectory>
+
+    <!-- Shortcut folders -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="OpenSourceTree" />
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="Main" Title="OpenSourceTree" Level="1">
+      <!-- Harvest the entire self-contained publish output -->
+      <Files Directory="INSTALLFOLDER" Include="$(var.PublishDir)\**" />
+      <ComponentGroupRef Id="Shortcuts" />
+    </Feature>
+
+    <ComponentGroup Id="Shortcuts">
+      <Component Id="StartMenuShortcut" Directory="AppShortcutFolder" Guid="2a7c4f10-9b3e-4d62-8e51-3f0a6c2d9b41">
+        <Shortcut Id="StartMenuSc" Name="OpenSourceTree"
+                  Description="Cross-platform Git client"
+                  Target="[INSTALLFOLDER]OpenSourceTree.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RemoveFolder Id="RemoveAppShortcutFolder" Directory="AppShortcutFolder" On="uninstall" />
+        <RegistryValue Root="HKLM" Key="Software\OpenSourceTree" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="6d1b8e35-2c47-4a90-b5f2-8e0c1a4d7f23">
+        <Shortcut Id="DesktopSc" Name="OpenSourceTree"
+                  Description="Cross-platform Git client"
+                  Target="[INSTALLFOLDER]OpenSourceTree.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RegistryValue Root="HKLM" Key="Software\OpenSourceTree" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Installer UI: welcome → license → folder → install -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProjectDir)\installer\license.rtf" />
+  </Package>
+</Wix>
