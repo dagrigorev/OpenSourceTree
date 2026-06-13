@@ -18,10 +18,10 @@ public static class Ui
     private static Window? MainWindow =>
         (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 
-    private static readonly IBrush DialogBg = new SolidColorBrush(Color.Parse("#1C2733"));
-
     private static Window MakeDialog(string title, double width, double height)
     {
+        var background = Application.Current?.Resources["B.Window"] as IBrush
+                         ?? new SolidColorBrush(Color.Parse("#1C2733"));
         return new Window
         {
             Title = title,
@@ -29,7 +29,7 @@ public static class Ui
             Height = height,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Background = DialogBg,
+            Background = background,
             ShowInTaskbar = false
         };
     }
@@ -38,7 +38,8 @@ public static class Ui
     {
         var b = new Button
         {
-            Content = text,
+            // Common dialog labels (OK, Cancel, …) translate via the Loc table.
+            Content = Loc.T(text),
             MinWidth = 90,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(6, 0, 0, 0)
@@ -803,12 +804,36 @@ public static class Ui
         var restoreTabs = new CheckBox { Content = "Reopen repositories on startup", IsChecked = settings.RestoreTabsOnStartup };
         var historyLimitBox = new TextBox { Text = settings.HistoryLimit.ToString(), Width = 100, HorizontalAlignment = HorizontalAlignment.Left };
 
+        var themeBox = new ComboBox
+        {
+            ItemsSource = new[] { Loc.T("Dark"), Loc.T("Light") },
+            SelectedIndex = settings.Theme == "Light" ? 1 : 0,
+            MinWidth = 140
+        };
+        var languageBox = new ComboBox
+        {
+            ItemsSource = new[] { "English", "Русский" },
+            SelectedIndex = settings.Language == "ru" ? 1 : 0,
+            MinWidth = 140
+        };
+        var appearanceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 18 };
+        var themeCol = new StackPanel { Spacing = 4 };
+        themeCol.Children.Add(new TextBlock { Text = Loc.T("Theme"), Foreground = Brushes.Gray, FontSize = 12 });
+        themeCol.Children.Add(themeBox);
+        var langCol = new StackPanel { Spacing = 4 };
+        langCol.Children.Add(new TextBlock { Text = Loc.T("Language"), Foreground = Brushes.Gray, FontSize = 12 });
+        langCol.Children.Add(languageBox);
+        appearanceRow.Children.Add(themeCol);
+        appearanceRow.Children.Add(langCol);
+
         var cloneRow = new DockPanel();
         DockPanel.SetDock(browseCloneDir, Dock.Right);
         cloneRow.Children.Add(browseCloneDir);
         cloneRow.Children.Add(cloneDirBox);
 
         var generalPanel = new StackPanel { Margin = new Thickness(14), Spacing = 8 };
+        generalPanel.Children.Add(appearanceRow);
+        generalPanel.Children.Add(new Separator { Margin = new Thickness(0, 6) });
         generalPanel.Children.Add(new TextBlock { Text = "Default user information (global git config)", Foreground = Brushes.Gray });
         generalPanel.Children.Add(nameBox);
         generalPanel.Children.Add(emailBox);
@@ -881,6 +906,18 @@ public static class Ui
                 settings.DiffContextLines = Math.Clamp(ctx, 0, 100);
             settings.GitExecutablePath = string.IsNullOrWhiteSpace(gitPathBox.Text) ? null : gitPathBox.Text!.Trim();
             GitCliService.ResetCache();
+
+            string newTheme = themeBox.SelectedIndex == 1 ? "Light" : "Dark";
+            string newLanguage = languageBox.SelectedIndex == 1 ? "ru" : "en";
+            bool appearanceChanged = newTheme != settings.Theme || newLanguage != settings.Language;
+            settings.Theme = newTheme;
+            settings.Language = newLanguage;
+            if (appearanceChanged)
+            {
+                ThemeService.Apply(newTheme);
+                Loc.Apply(newLanguage);
+            }
+
             settings.Save();
             saved = true;
             dialog.Close();
@@ -931,7 +968,8 @@ public static class Ui
                 FontFamily = new FontFamily("Cascadia Mono,Consolas,Menlo,monospace"),
                 FontSize = 12,
                 BorderThickness = new Thickness(0),
-                Background = new SolidColorBrush(Color.Parse("#10161E"))
+                Background = Application.Current?.Resources["B.Content"] as IBrush
+                             ?? new SolidColorBrush(Color.Parse("#10161E"))
             };
             _scroll = new ScrollViewer { Content = _text };
             _close = MakeButton("Close", accent: true);

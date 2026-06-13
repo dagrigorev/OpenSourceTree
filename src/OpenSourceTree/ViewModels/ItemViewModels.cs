@@ -134,43 +134,39 @@ public sealed class DiffLineViewModel
     public IBrush Background { get; }
     public IBrush Foreground { get; }
 
-    private static readonly IBrush AddedBg = new ImmutableSolidColorBrush(Color.Parse("#1A3322"));
-    private static readonly IBrush RemovedBg = new ImmutableSolidColorBrush(Color.Parse("#3A2022"));
-    private static readonly IBrush HunkBg = new ImmutableSolidColorBrush(Color.Parse("#1E3245"));
-    private static readonly IBrush HeaderBg = new ImmutableSolidColorBrush(Color.Parse("#1B2530"));
-    private static readonly IBrush None = Brushes.Transparent;
-    private static readonly IBrush NormalFg = new ImmutableSolidColorBrush(Color.Parse("#C9D4DF"));
-    private static readonly IBrush DimFg = new ImmutableSolidColorBrush(Color.Parse("#6E8295"));
-    private static readonly IBrush AddedFg = new ImmutableSolidColorBrush(Color.Parse("#7FD49B"));
-    private static readonly IBrush RemovedFg = new ImmutableSolidColorBrush(Color.Parse("#E89A9A"));
-    private static readonly IBrush HunkFg = new ImmutableSolidColorBrush(Color.Parse("#6FA8DC"));
-
     public DiffLineViewModel(DiffLine line)
     {
         OldNo = line.OldLineNumber?.ToString() ?? "";
         NewNo = line.NewLineNumber?.ToString() ?? "";
 
+        // Colors come from the theme-aware palette; rows are rebuilt on refresh,
+        // so a theme switch recolors diffs the next time they are loaded.
         switch (line.Kind)
         {
             case DiffLineKind.Added:
                 Text = "+ " + line.Text;
-                Background = AddedBg; Foreground = AddedFg;
+                Background = Services.ThemePalette.DiffAddedBg;
+                Foreground = Services.ThemePalette.DiffAddedFg;
                 break;
             case DiffLineKind.Removed:
                 Text = "- " + line.Text;
-                Background = RemovedBg; Foreground = RemovedFg;
+                Background = Services.ThemePalette.DiffRemovedBg;
+                Foreground = Services.ThemePalette.DiffRemovedFg;
                 break;
             case DiffLineKind.HunkHeader:
                 Text = line.Text;
-                Background = HunkBg; Foreground = HunkFg;
+                Background = Services.ThemePalette.DiffHunkBg;
+                Foreground = Services.ThemePalette.DiffHunkFg;
                 break;
             case DiffLineKind.FileHeader:
                 Text = line.Text;
-                Background = HeaderBg; Foreground = DimFg;
+                Background = Services.ThemePalette.DiffHeaderBg;
+                Foreground = Services.ThemePalette.DiffDimFg;
                 break;
             default:
                 Text = "  " + line.Text;
-                Background = None; Foreground = NormalFg;
+                Background = Brushes.Transparent;
+                Foreground = Services.ThemePalette.DiffNormalFg;
                 break;
         }
     }

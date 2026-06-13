@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="OpenSourceTree.Views.DiffViewer"
              Name="Root">
-    <Panel Background="#10161E">
+    <Panel Background="{DynamicResource B.Content}">
         <ListBox ItemsSource="{Binding #Root.Lines}"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
             <ListBox.Styles>

@@ -3,8 +3,8 @@
              x:Class="OpenSourceTree.Views.SearchView">
 
     <Grid RowDefinitions="Auto,*">
-        <Border Grid.Row="0" Background="#18242F" Padding="10,8">
-            <TextBox Text="{Binding SearchText}" Watermark="Search commit messages, authors or SHA…"
+        <Border Grid.Row="0" Background="{DynamicResource B.Toolbar}" Padding="10,8">
+            <TextBox Text="{Binding SearchText}" Watermark="{DynamicResource L.SearchWm}"
                      MaxWidth="520" HorizontalAlignment="Left" MinWidth="380" />
         </Border>
 

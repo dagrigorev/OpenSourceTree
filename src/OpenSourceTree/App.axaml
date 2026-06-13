@@ -6,31 +6,31 @@
     <Application.Styles>
         <FluentTheme />
 
-        <!-- ====== Global SourceTree-like dark navy look ====== -->
+        <!-- ====== SourceTree-like look; all colors come from B.* dynamic resources ====== -->
 
         <Style Selector="Window">
-            <Setter Property="Background" Value="#1C2733" />
+            <Setter Property="Background" Value="{DynamicResource B.Window}" />
             <Setter Property="FontSize" Value="12" />
         </Style>
 
         <Style Selector="TextBlock">
-            <Setter Property="Foreground" Value="#CDD9E5" />
+            <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
         </Style>
 
         <Style Selector="TextBlock.dim">
-            <Setter Property="Foreground" Value="#7E92A5" />
+            <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
         </Style>
 
         <Style Selector="TextBlock.sectionHeader">
-            <Setter Property="Foreground" Value="#7E92A5" />
+            <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
             <Setter Property="FontSize" Value="11" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
         <Style Selector="TextBox">
-            <Setter Property="Background" Value="#141E28" />
-            <Setter Property="Foreground" Value="#D9E1E8" />
-            <Setter Property="BorderBrush" Value="#2C3C4C" />
+            <Setter Property="Background" Value="{DynamicResource B.Input}" />
+            <Setter Property="Foreground" Value="{DynamicResource B.TextBright}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource B.Divider}" />
             <Setter Property="CornerRadius" Value="3" />
             <!-- Keep the selection alive while the Edit menu (or anything else) has focus. -->
             <Setter Property="ClearSelectionOnLostFocus" Value="False" />
@@ -43,11 +43,11 @@
         </Style>
 
         <Style Selector="Button.accent">
-            <Setter Property="Background" Value="#2E74B5" />
+            <Setter Property="Background" Value="{DynamicResource B.Accent}" />
             <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
         <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#3A84C8" />
+            <Setter Property="Background" Value="{DynamicResource B.AccentHover}" />
         </Style>
 
         <!-- Toolbar buttons: icon above label, like SourceTree -->
@@ -61,29 +61,44 @@
             <Setter Property="CornerRadius" Value="3" />
         </Style>
         <Style Selector="Button.toolbar:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#26384A" />
+            <Setter Property="Background" Value="{DynamicResource B.Hover}" />
         </Style>
         <Style Selector="Button.toolbar:disabled /template/ ContentPresenter">
             <Setter Property="Opacity" Value="0.45" />
         </Style>
         <Style Selector="Button.toolbar.selected /template/ ContentPresenter">
-            <Setter Property="Background" Value="#26384A" />
+            <Setter Property="Background" Value="{DynamicResource B.Hover}" />
         </Style>
         <Style Selector="Button.toolbar.selected TextBlock">
-            <Setter Property="Foreground" Value="#4A9EE0" />
+            <Setter Property="Foreground" Value="{DynamicResource B.Accent}" />
         </Style>
         <Style Selector="Button.toolbar TextBlock">
-            <Setter Property="Foreground" Value="#AFC2D4" />
+            <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
             <Setter Property="FontSize" Value="11" />
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
-        <Style Selector="Button.toolbar Path">
-            <Setter Property="Stroke" Value="#9FB4C8" />
-            <Setter Property="StrokeThickness" Value="1.4" />
-            <Setter Property="Fill" Value="{x:Null}" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="StrokeJoin" Value="Round" />
-            <Setter Property="StrokeLineCap" Value="Round" />
+
+        <!-- Sidebar navigation items -->
+        <Style Selector="Button.navItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="22,4" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+        </Style>
+        <Style Selector="Button.navItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource B.Hover}" />
+        </Style>
+        <Style Selector="Button.navItem.selected">
+            <Setter Property="Background" Value="{DynamicResource B.Accent}" />
+        </Style>
+        <Style Selector="Button.navItem.selected TextBlock">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.navItem.selected:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource B.Accent}" />
         </Style>
 
         <!-- Sidebar section headers (chevron + icon + label) -->
@@ -100,53 +115,65 @@
             <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style Selector="ToggleButton.sectionToggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#243546" />
+            <Setter Property="Background" Value="{DynamicResource B.Hover}" />
         </Style>
         <Style Selector="ToggleButton.sectionToggle Path.chev">
             <Setter Property="RenderTransform" Value="rotate(0deg)" />
+            <Setter Property="Stroke" Value="{DynamicResource B.TextDim}" />
         </Style>
         <Style Selector="ToggleButton.sectionToggle:checked Path.chev">
             <Setter Property="RenderTransform" Value="rotate(90deg)" />
         </Style>
-        <Style Selector="Path.sideIcon">
-            <Setter Property="Stroke" Value="#7E92A5" />
-            <Setter Property="StrokeThickness" Value="1.3" />
-            <Setter Property="Fill" Value="{x:Null}" />
-            <Setter Property="StrokeJoin" Value="Round" />
-            <Setter Property="StrokeLineCap" Value="Round" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
 
-        <!-- Compact combo boxes for filter/sort rows -->
-        <Style Selector="ComboBox.filter">
-            <Setter Property="Background" Value="#141E28" />
-            <Setter Property="BorderBrush" Value="#2C3C4C" />
-            <Setter Property="Padding" Value="8,3" />
-            <Setter Property="MinHeight" Value="26" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-
-        <!-- Sidebar navigation items -->
-        <Style Selector="Button.navItem">
+        <!-- Sidebar data rows (branches, tags, remote branches, stashes, submodules) -->
+        <Style Selector="Border.sideItem">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Padding" Value="22,4" />
             <Setter Property="CornerRadius" Value="3" />
-            <Setter Property="Foreground" Value="#C2D1DF" />
         </Style>
-        <Style Selector="Button.navItem:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#243546" />
+        <Style Selector="Border.sideItem:pointerover">
+            <Setter Property="Background" Value="{DynamicResource B.Hover}" />
         </Style>
-        <Style Selector="Button.navItem.selected">
-            <Setter Property="Background" Value="#2E74B5" />
+        <Style Selector="Border.sideItem.selected">
+            <Setter Property="Background" Value="{DynamicResource B.Accent}" />
+        </Style>
+        <Style Selector="Border.sideItem.selected TextBlock">
             <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
-        <Style Selector="Button.navItem.selected:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#2E74B5" />
+
+        <!-- Repository tabs on the blue strip, like SourceTree: dark navy inactive tabs,
+             white active tab with dark text. The close button only shows on the active
+             tab or on hover. -->
+        <Style Selector="Border.tab">
+            <Setter Property="Background" Value="{DynamicResource B.TabInactive}" />
+        </Style>
+        <Style Selector="Border.tab:pointerover">
+            <Setter Property="Background" Value="{DynamicResource B.TabHover}" />
+        </Style>
+        <Style Selector="Border.tab TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource B.TabText}" />
+        </Style>
+        <Style Selector="Border.tab.active">
+            <Setter Property="Background" Value="{DynamicResource B.TabActive}" />
+        </Style>
+        <Style Selector="Border.tab.active:pointerover">
+            <Setter Property="Background" Value="{DynamicResource B.TabActive}" />
+        </Style>
+        <Style Selector="Border.tab.active TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource B.TabActiveText}" />
+        </Style>
+        <Style Selector="Border.tab Button.tabClose">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="Foreground" Value="{DynamicResource B.TabText}" />
+        </Style>
+        <Style Selector="Border.tab:pointerover Button.tabClose">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Border.tab.active Button.tabClose">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Foreground" Value="#5C7080" />
         </Style>
 
         <!-- Compact list items -->
@@ -158,66 +185,60 @@
             <Setter Property="MinHeight" Value="24" />
         </Style>
         <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#2E74B5" />
+            <Setter Property="Background" Value="{DynamicResource B.Accent}" />
         </Style>
         <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#243546" />
-        </Style>
-
-        <Style Selector="Expander">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-        </Style>
-        <Style Selector="Expander /template/ ToggleButton">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="6,4" />
-            <Setter Property="MinHeight" Value="0" />
-        </Style>
-
-        <!-- Sidebar data rows (branches, tags, remote branches, stashes) -->
-        <Style Selector="Border.sideItem">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="CornerRadius" Value="3" />
-        </Style>
-        <Style Selector="Border.sideItem:pointerover">
-            <Setter Property="Background" Value="#243546" />
-        </Style>
-        <Style Selector="Border.sideItem.selected">
-            <Setter Property="Background" Value="#2E74B5" />
-        </Style>
-        <Style Selector="Border.sideItem.selected TextBlock">
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-
-        <Style Selector="Border.tabChip">
-            <Setter Property="Background" Value="#16222E" />
-        </Style>
-        <Style Selector="Border.tabChip.active">
-            <Setter Property="Background" Value="#2E74B5" />
-        </Style>
-        <Style Selector="Border.tabChip.active TextBlock">
-            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{DynamicResource B.Hover}" />
         </Style>
 
         <Style Selector="GridSplitter">
-            <Setter Property="Background" Value="#101820" />
+            <Setter Property="Background" Value="{DynamicResource B.Border}" />
         </Style>
 
         <Style Selector="Menu">
             <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style Selector="Menu > MenuItem">
-            <Setter Property="Padding" Value="8,3" />
-            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <!-- Tab strip chrome buttons: scroll arrows, +, ▾, hamburger -->
+        <Style Selector="Button.stripBtn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <Style Selector="Button.stripBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#2A82DC" />
+        </Style>
+        <Style Selector="Button.stripBtn Path">
+            <Setter Property="Stroke" Value="{DynamicResource B.StripIcon}" />
+            <Setter Property="StrokeThickness" Value="1.6" />
+            <Setter Property="Fill" Value="{x:Null}" />
+            <Setter Property="StrokeJoin" Value="Round" />
+            <Setter Property="StrokeLineCap" Value="Round" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Stretch" Value="None" />
         </Style>
 
         <Style Selector="CheckBox">
-            <Setter Property="Foreground" Value="#AFC2D4" />
+            <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="MinHeight" Value="0" />
+        </Style>
+
+        <!-- Compact combo boxes for filter/sort rows -->
+        <Style Selector="ComboBox.filter">
+            <Setter Property="Background" Value="{DynamicResource B.Input}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource B.Divider}" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
     </Application.Styles>
 </Application>

@@ -6,29 +6,44 @@ An open-source, cross-platform clone of [Atlassian SourceTree](https://www.sourc
 
 ## Features
 
-- **Tabbed repositories** in the title bar (like SourceTree), persisted between sessions
-- **History filters** — all/current branch combo, *show remote branches* toggle, date/topological sort, and a *Jump to* box (message, author or SHA)
-- **Sidebar** with SourceTree-style section icons and chevrons plus a filter box that narrows branches, tags, remotes and stashes
-- **Single-selection sidebar tree** — clicking a branch, tag or remote branch highlights the row, switches to History and scrolls to that ref's commit; Workspace nav items and sidebar rows share one selection like SourceTree
-- **File-based SVG icons** — the original icon set lives in `Assets/Icons/*.svg`, copied next to the executable and loaded from disk at runtime (Avalonia.Svg.Skia), not from embedded assembly resources
-- **Repository settings dialog** with *Remotes* (add/edit/remove remote paths) and *Advanced* (.gitignore editing, local vs. global user identity) tabs
-- **Full menu bar** in SourceTree's order — File, Edit (undo/redo/cut/copy/paste/select-all on the focused text field), View, Repository, Actions, Tools (SSH agent, SSH keys, Options…) and Help (README, keyboard shortcuts, about)
-- **Options dialog** (Tools → Options) with *General* (global git identity, default clone directory, reopen-tabs-on-startup, history commit limit), *Git* (custom git executable path + detected version) and *Diff* (context lines) tabs — all persisted and applied live
-- **Pending files sorting** — by file status, path or file name, with file counts
-- **Git Flow** — initialize (production/development branches + prefixes stored in git config, compatible with the git-flow tool), start feature/release/hotfix branches, and finish them with no-fast-forward merges, version tags and branch cleanup
-- **Interactive rebase** — right-click a commit → *Rebase children interactively*: pick / reword / squash / drop and reorder in a dialog; runs as a native cherry-pick replay that automatically aborts and restores the branch on any conflict
-- **Submodules** — sidebar section listing all submodules (double-click opens one as a tab), add submodule dialog, and init/update (single or recursive all) via the git CLI
-- **History view** — commit log with a custom-drawn branch graph (lanes, merge edges, colored per branch), ref badges (HEAD / local / remote branches, tags), date / author / SHA columns
-- **Commit details** — SHA, parents, author, refs, full message, changed files with status badges, per-file unified diff with line numbers and add/remove coloring
-- **File Status view** — staged / unstaged lists with checkbox staging, Stage All / Unstage All, per-file diff, discard, commit box with author line, *amend* and *push immediately* options
-- **Sidebar** — branches (current marker, ahead/behind counters), tags, remotes with remote branches, stashes; double-click to checkout, full context menus (checkout / merge / delete / apply / pop / drop)
-- **Toolbar** — Commit, Pull, Push, Fetch, Branch, Merge, Stash, Discard, Tag, Terminal, Explorer, Settings
-- **Network operations** (clone / fetch / pull / push) via the git CLI with live output window
-- **Search view** — find commits by message, author or SHA
-- **Commit context menu** — checkout commit, tag, reset (soft / mixed / hard), copy SHA
-- **Repository settings** — user.name / user.email (local or global)
-- Auto-refresh via filesystem watcher; F5 to refresh manually
-- **New tab page** styled after SourceTree: a Local / Remote | Clone / Add / New button row — Local lists known repositories with a search box, per-repo current-branch chips and an uncommitted-changes indicator (probed in the background), plus a status bar with Refresh / Show in Explorer / Open in Terminal; Remote browses **GitHub / GitLab / Bitbucket accounts** (optional personal access token or app password — without one only public repositories are listed; works with self-hosted GitLab) with search, owner avatars and private badges, double-click hands the repository to Clone — tokens are kept in the **OS credential store** (Windows Credential Manager, macOS keychain, libsecret), never in settings.json; Clone offers URL + destination + auto-filled name with a target preview, Add opens an existing working copy, New initializes a repository
+### Shell
+- **Menu bar inside the window title bar**, in SourceTree's order — File, Edit, View, Repository, Actions, Tools, Help — with the repository tab strip on the row below.
+- **SourceTree-style tabs** — a blue strip of rectangular tabs (dark inactive, darker active), each with a close button (shown on the active tab / on hover) and an ahead-count badge (`N ↑`). Drag to reorder, scroll arrows for overflow, a large **+** to open a tab, a **▾** to choose its kind (Local / Clone / Add / New) and a **☰** listing all open tabs. Tabs and their order persist between sessions.
+- **Dark and light themes** plus an **English / Русский** interface switch (Tools → Options → General) — window colors, tinted SVG icons, diff colors and UI strings all swap live without a restart.
+- **File-based SVG icons** — the original icon set lives in `Assets/Icons/*.svg`, copied next to the executable and loaded (and re-tinted per theme) from disk at runtime via Avalonia.Svg.Skia — not from embedded assembly resources.
+
+### History & commits
+- **History view** — commit log with a custom-drawn branch graph (lanes, merge edges, colored per branch), ref badges (HEAD / local / remote branches, tags), and date / author / SHA columns.
+- **History filters** — all/current branch combo, *show remote branches* toggle, date/topological sort, and a *Jump to* box (message, author or SHA).
+- **Commit details** — SHA, parents, author, refs, full message, changed files with status badges, and a per-file unified diff with line numbers and add/remove coloring.
+- **Commit context menu** — checkout commit, tag, reset (soft / mixed / hard), interactive rebase, copy SHA.
+- **Search view** — find commits by message, author or SHA.
+
+### Working copy
+- **File Status view** — staged / unstaged lists with checkbox staging, Stage All / Unstage All, per-file diff, discard, and a commit box with author line plus *amend* and *push immediately* options.
+- **Pending files sorting** — by file status, path or file name, with counts.
+- Auto-refresh via a filesystem watcher; F5 to refresh manually.
+
+### Branches, tags, remotes, stashes, submodules
+- **Sidebar** with SourceTree-style section icons/chevrons and a filter box: branches (current marker, ahead/behind counters), tags, remotes with their branches, stashes, and submodules.
+- **Single-selection tree** — clicking a branch, tag or remote branch highlights the row, switches to History and scrolls to that ref's commit; Workspace nav items and sidebar rows share one selection.
+- **Context menus** — checkout / merge / delete / copy name (branches), apply / pop / drop (stashes), open / update (submodules), and more.
+- **Submodules** — double-click opens one as a tab; add-submodule dialog and init/update (single or recursive) via the git CLI.
+
+### Git operations
+- **Toolbar** — Commit, Pull, Push, Fetch, Branch, Merge, Stash, Discard, Tag, Git Flow, Terminal, Explorer, Settings.
+- **Network operations** (clone / fetch / pull / push) via the git CLI with a live output window.
+- **Git Flow** — initialize (production/development branches + prefixes stored in git config, compatible with the git-flow tool), start feature/release/hotfix branches, and finish them with no-fast-forward merges, version tags and branch cleanup.
+- **Interactive rebase** — right-click a commit → *Rebase children interactively*: pick / reword / squash / drop and reorder in a dialog; runs as a native cherry-pick replay that automatically aborts and restores the branch on any conflict.
+
+### New tab (Local / Remote / Clone / Add / New)
+- **Local** lists known repositories with a search box, per-repo current-branch chips and an uncommitted-changes indicator (probed in the background), plus a status bar with Refresh / Show in Explorer / Open in Terminal.
+- **Remote** browses **GitHub / GitLab / Bitbucket** accounts (optional personal access token or app password — without one only public repositories are listed; works with self-hosted GitLab) with search, owner avatars and private badges; double-click hands a repository to Clone. Tokens are kept in the **OS credential store** (Windows Credential Manager, macOS keychain, libsecret), never in settings.json.
+- **Clone** offers URL + destination + auto-filled name with a target preview; **Add** opens an existing working copy; **New** initializes a repository.
+
+### Settings
+- **Repository settings dialog** with *Remotes* (add/edit/remove remote paths) and *Advanced* (.gitignore editing, local vs. global user identity) tabs.
+- **Options dialog** (Tools → Options) with *General* (theme, language, global git identity, default clone directory, reopen-tabs-on-startup, history commit limit), *Git* (custom git executable path + detected version) and *Diff* (context lines) tabs — all persisted and applied live.
 
 ## Screenshots
 
@@ -40,7 +55,11 @@ An open-source, cross-platform clone of [Atlassian SourceTree](https://www.sourc
 
 ![File status view](docs/filestatus.png)
 
-**Options** (Tools → Options) — global identity, clone directory, history limit, git executable, diff context:
+**Light theme** — the same app with the light palette and tinted icons:
+
+![Light theme](docs/light-theme.png)
+
+**Options** (Tools → Options) — theme, language, identity, clone directory, history limit, git executable, diff context:
 
 ![Options dialog](docs/options.png)
 
@@ -83,20 +102,30 @@ Cross-publishing works too — e.g. `./build.sh linux-x64` on a Windows machine 
 
 ```
 src/OpenSourceTree/
-  Models/        plain records: commits, refs, file status, diff lines, graph rows
+  Models/        plain records: commits, refs, file status, diff lines, graph rows, git-flow config, rebase steps
   Services/
-    GitService     LibGit2Sharp wrapper (status, history, branches, tags, stashes, diffs, reset…)
-    GraphBuilder   assigns commits to graph lanes, emits drawing segments per row
-    GitCliService  fetch/pull/push/clone through the system git executable
-    DiffParser     unified-diff text → displayable lines
-    Ui             compact code-built modal dialogs (input, confirm, pick, output, settings)
-    AppSettings    JSON persistence (%APPDATA%/OpenSourceTree)
-    PlatformService open terminal / file manager per OS
+    GitService       LibGit2Sharp wrapper (status, history, branches, tags, stashes, diffs, reset,
+                     git-flow, interactive rebase, submodules)
+    GraphBuilder     assigns commits to graph lanes, emits drawing segments per row
+    GitCliService    fetch/pull/push/clone/submodule through the system git executable
+    HostingService   GitHub / GitLab / Bitbucket repository listing + avatar fetch/cache
+    CredentialService access-token storage in the OS credential store (+ encrypted file fallback)
+    DiffParser       unified-diff text → displayable lines
+    ThemeService     publishes the B.* brushes and tinted I.* icons; Dark / Light palettes
+    Loc              en/ru string tables published as L.* resources for live language switching
+    Ui               compact code-built modal dialogs (input, confirm, pick, output, settings, options)
+    AppSettings      JSON persistence (%APPDATA%/OpenSourceTree)
+    PlatformService  open terminal / file manager / SSH helpers per OS
   ViewModels/    MVVM (CommunityToolkit.Mvvm), one RepositoryViewModel per tab
-  Views/         AXAML views + CommitGraphControl (custom-drawn graph cell)
+  Views/         AXAML views + CommitGraphControl (custom-drawn graph cell) + Icons loader
+  Assets/Icons/  original SVG icon set, copied next to the executable
 ```
+
+Colors, icons and UI strings all flow through `Application.Resources` as dynamic resources
+(`B.*` brushes, `I.*` icons, `L.*` strings), so theme and language changes apply live.
 
 ## Not implemented (vs. real SourceTree)
 
 Hunk/line-level staging, file blame/log, bookmarks window, custom actions, Mercurial.
-Interactive rebase is limited to linear (merge-free) ranges. Contributions welcome.
+Interactive rebase is limited to linear (merge-free) ranges. Some deep dialogs
+(Git Flow hub, rebase editor) are English-only. Contributions welcome.

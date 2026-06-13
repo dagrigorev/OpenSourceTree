@@ -59,6 +59,12 @@ public sealed class AppSettings
     /// <summary>Hosting accounts shown in the New tab's Remote view.</summary>
     public List<HostingAccount> Accounts { get; set; } = new();
 
+    /// <summary>"Dark" or "Light".</summary>
+    public string Theme { get; set; } = "Dark";
+
+    /// <summary>"en" or "ru".</summary>
+    public string Language { get; set; } = "en";
+
     private static string SettingsDir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "OpenSourceTree");
 

@@ -39,12 +39,14 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
                 await RefreshAsync();
         };
         StartWatcher();
+        Loc.Changed += OnLanguageChanged;
 
         _ = RefreshAsync();
     }
 
     public override void OnClosed()
     {
+        Loc.Changed -= OnLanguageChanged;
         _watcher?.Dispose();
         _watchDebounce.Stop();
         _git.Dispose();
@@ -220,9 +222,48 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     [ObservableProperty] private int _historySortIndex;
     [ObservableProperty] private string _jumpToText = "";
 
-    partial void OnBranchFilterIndexChanged(int value) => _ = RefreshAsync();
-    partial void OnShowRemoteBranchesChanged(bool value) => _ = RefreshAsync();
-    partial void OnHistorySortIndexChanged(int value) => _ = RefreshAsync();
+    /// <summary>Set while re-selecting combo indices after a language switch (no real change).</summary>
+    private bool _suppressFilterRefresh;
+
+    partial void OnBranchFilterIndexChanged(int value)
+    {
+        if (!_suppressFilterRefresh && value >= 0) _ = RefreshAsync();
+    }
+
+    partial void OnShowRemoteBranchesChanged(bool value)
+    {
+        if (!_suppressFilterRefresh) _ = RefreshAsync();
+    }
+
+    partial void OnHistorySortIndexChanged(int value)
+    {
+        if (!_suppressFilterRefresh && value >= 0) _ = RefreshAsync();
+    }
+
+    /// <summary>
+    /// ComboBox selection boxes keep a snapshot of the selected item's text; after a language
+    /// switch we bounce the indices so they re-render with the new strings.
+    /// </summary>
+    private void OnLanguageChanged()
+    {
+        _suppressFilterRefresh = true;
+        try
+        {
+            int branch = BranchFilterIndex;
+            BranchFilterIndex = -1;
+            BranchFilterIndex = branch;
+            int sort = HistorySortIndex;
+            HistorySortIndex = -1;
+            HistorySortIndex = sort;
+            int files = FileSortIndex;
+            FileSortIndex = -1;
+            FileSortIndex = files;
+        }
+        finally
+        {
+            _suppressFilterRefresh = false;
+        }
+    }
 
     /// <summary>Selects the next history row matching the query (message, author or SHA prefix). Returns it for scrolling.</summary>
     public CommitRowViewModel? JumpToNext()
@@ -278,7 +319,10 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     [ObservableProperty] private int _fileSortIndex;
     private List<FileStatusEntry> _lastStatus = new();
 
-    partial void OnFileSortIndexChanged(int value) => ApplyFileSort();
+    partial void OnFileSortIndexChanged(int value)
+    {
+        if (!_suppressFilterRefresh && value >= 0) ApplyFileSort();
+    }
 
     private IEnumerable<FileStatusEntry> SortFiles(IEnumerable<FileStatusEntry> files) => FileSortIndex switch
     {
@@ -336,6 +380,10 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
 
             HeadName = snapshot.Head;
             CommitAuthorText = snapshot.Author;
+
+            // Tab badge: how far the current branch is ahead of its upstream (like SourceTree).
+            var currentBranch = snapshot.Branches.FirstOrDefault(b => b.IsCurrent);
+            TabBadge = currentBranch is { Ahead: > 0 } ? $"{currentBranch.Ahead} ↑" : "";
 
             _allBranches = snapshot.Branches.Select(b => new BranchItemViewModel(b, this)).ToList();
             _allRemotes = snapshot.Remotes.Select(r => new RemoteItemViewModel(r, this)).ToList();

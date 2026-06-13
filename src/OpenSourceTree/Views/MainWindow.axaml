@@ -8,9 +8,9 @@
         MinWidth="900" MinHeight="560"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
-        ExtendClientAreaTitleBarHeightHint="36"
+        ExtendClientAreaTitleBarHeightHint="30"
         Icon="avares://OpenSourceTree/Assets/icon.ico"
-        Background="#1C2733">
+        Background="{DynamicResource B.Window}">
 
     <Window.DataTemplates>
         <DataTemplate DataType="{x:Type vm:RepositoryViewModel}">
@@ -21,115 +21,143 @@
         </DataTemplate>
     </Window.DataTemplates>
 
-    <DockPanel>
+    <DockPanel VerticalSpacing="0">
 
-        <!-- ===== Custom title bar with repository tabs ===== -->
-        <Border Name="TitleBar" DockPanel.Dock="Top" Height="36" Background="#0E1822"
-                PointerPressed="TitleBar_PointerPressed" DoubleTapped="TitleBar_DoubleTapped">
+        <!-- ===== Row 1: menu inside the title bar (like SourceTree) ===== -->
+        <Border DockPanel.Dock="Top" Height="30" Background="{DynamicResource B.Strip}">
             <DockPanel LastChildFill="True">
                 <Image DockPanel.Dock="Left" Source="avares://OpenSourceTree/Assets/icon.png"
-                       Width="20" Height="20" VerticalAlignment="Center" Margin="10,0,8,0" />
-                <Border DockPanel.Dock="Right" Width="140" />  <!-- space for caption buttons -->
-                <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                        <ItemsControl ItemsSource="{Binding Tabs}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="1" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Classes="tabChip" Classes.active="{Binding IsActive}"
-                                            Height="28" MinWidth="110" MaxWidth="200"
-                                            CornerRadius="4,4,0,0" Margin="0"
-                                            PointerPressed="Tab_PointerPressed">
-                                        <DockPanel Margin="10,0,4,0">
-                                            <Button DockPanel.Dock="Right" Content="✕" FontSize="9"
-                                                    Background="Transparent" BorderThickness="0"
-                                                    Foreground="#7E92A5" Padding="4,2"
-                                                    VerticalAlignment="Center"
-                                                    Command="{Binding $parent[Window].DataContext.CloseTabCommand}"
-                                                    CommandParameter="{Binding}" />
-                                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center"
-                                                       Foreground="#C2D1DF" FontSize="12"
-                                                       TextTrimming="CharacterEllipsis" />
-                                        </DockPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <Button Content="+" FontSize="15" Padding="8,0" Margin="4,0,0,2"
-                                Background="Transparent" BorderThickness="0" Foreground="#7E92A5"
-                                VerticalAlignment="Center"
-                                Command="{Binding NewTabCommand}" />
-                    </StackPanel>
-                </ScrollViewer>
+                       Width="18" Height="18" VerticalAlignment="Center" Margin="8,0,2,0" />
+                <Menu DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <MenuItem Header="{DynamicResource L.File}">
+                        <MenuItem Header="{DynamicResource L.NewTab}" InputGesture="Ctrl+T" Command="{Binding NewTabCommand}" />
+                        <MenuItem Header="{DynamicResource L.OpenRepo}" InputGesture="Ctrl+O" Command="{Binding OpenRepositoryDialogCommand}" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.Exit}" Click="Exit_Click" />
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource L.Edit}">
+                        <MenuItem Header="{DynamicResource L.Undo}" InputGesture="Ctrl+Z" Click="EditUndo_Click" />
+                        <MenuItem Header="{DynamicResource L.Redo}" InputGesture="Ctrl+Y" Click="EditRedo_Click" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.Cut}" InputGesture="Ctrl+X" Click="EditCut_Click" />
+                        <MenuItem Header="{DynamicResource L.Copy}" InputGesture="Ctrl+C" Click="EditCopy_Click" />
+                        <MenuItem Header="{DynamicResource L.Paste}" InputGesture="Ctrl+V" Click="EditPaste_Click" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.SelectAll}" InputGesture="Ctrl+A" Click="EditSelectAll_Click" />
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource L.View}">
+                        <MenuItem Header="{DynamicResource L.FileStatus}" Command="{Binding ActiveRepository.SelectSectionCommand}" CommandParameter="FileStatus" />
+                        <MenuItem Header="{DynamicResource L.History}" Command="{Binding ActiveRepository.SelectSectionCommand}" CommandParameter="History" />
+                        <MenuItem Header="{DynamicResource L.Search}" Command="{Binding ActiveRepository.SelectSectionCommand}" CommandParameter="Search" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.Refresh}" InputGesture="F5" Command="{Binding ActiveRepository.RefreshCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource L.Repository}">
+                        <MenuItem Header="{DynamicResource L.CommitDots}" Command="{Binding ActiveRepository.ShowCommitViewCommand}" />
+                        <MenuItem Header="{DynamicResource L.Fetch}" Command="{Binding ActiveRepository.FetchCommand}" />
+                        <MenuItem Header="{DynamicResource L.Pull}" Command="{Binding ActiveRepository.PullCommand}" />
+                        <MenuItem Header="{DynamicResource L.Push}" Command="{Binding ActiveRepository.PushCommand}" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.GitFlowDots}" Command="{Binding ActiveRepository.GitFlowCommand}" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.AddSubmodule}" Command="{Binding ActiveRepository.AddSubmoduleCommand}" />
+                        <MenuItem Header="{DynamicResource L.UpdateSubmodules}" Command="{Binding ActiveRepository.UpdateSubmodulesCommand}" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.SettingsDots}" Command="{Binding ActiveRepository.OpenSettingsCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource L.Actions}">
+                        <MenuItem Header="{DynamicResource L.NewBranchDots}" Command="{Binding ActiveRepository.NewBranchCommand}" />
+                        <MenuItem Header="{DynamicResource L.MergeDots}" Command="{Binding ActiveRepository.MergeCommand}" />
+                        <MenuItem Header="{DynamicResource L.StashDots}" Command="{Binding ActiveRepository.StashChangesCommand}" />
+                        <MenuItem Header="{DynamicResource L.NewTagDots}" Command="{Binding ActiveRepository.NewTagCommand}" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.OpenTerminal}" Command="{Binding ActiveRepository.OpenTerminalCommand}" />
+                        <MenuItem Header="{DynamicResource L.OpenExplorer}" Command="{Binding ActiveRepository.OpenExplorerCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource L.Tools}">
+                        <MenuItem Header="{DynamicResource L.LaunchSshAgent}" Command="{Binding LaunchSshAgentCommand}" />
+                        <MenuItem Header="{DynamicResource L.AddSshKey}" Command="{Binding OpenSshFolderCommand}" />
+                        <MenuItem Header="{DynamicResource L.GenerateSshKey}" Command="{Binding GenerateSshKeyCommand}" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.OptionsDots}" Command="{Binding OpenOptionsCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource L.Help}">
+                        <MenuItem Header="{DynamicResource L.GettingStarted}" Command="{Binding OpenReadmeCommand}" />
+                        <MenuItem Header="{DynamicResource L.Shortcuts}" Command="{Binding ShowShortcutsCommand}" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource L.About}" Command="{Binding AboutCommand}" />
+                    </MenuItem>
+                </Menu>
+                <!-- space reserved for the system caption buttons -->
+                <Border DockPanel.Dock="Right" Width="140" Background="Transparent" />
+                <Border Name="DragArea" Background="Transparent"
+                        PointerPressed="TitleBar_PointerPressed" DoubleTapped="TitleBar_DoubleTapped" />
             </DockPanel>
         </Border>
 
-        <!-- ===== Menu bar ===== -->
-        <Border DockPanel.Dock="Top" Background="#13202C" BorderBrush="#0B141D" BorderThickness="0,0,0,1">
-            <Menu>
-                <MenuItem Header="_File">
-                    <MenuItem Header="New Tab" InputGesture="Ctrl+T" Command="{Binding NewTabCommand}" />
-                    <MenuItem Header="Open Repository…" InputGesture="Ctrl+O" Command="{Binding OpenRepositoryDialogCommand}" />
-                    <Separator />
-                    <MenuItem Header="Exit" Click="Exit_Click" />
-                </MenuItem>
-                <MenuItem Header="_Edit">
-                    <MenuItem Header="Undo" InputGesture="Ctrl+Z" Click="EditUndo_Click" />
-                    <MenuItem Header="Redo" InputGesture="Ctrl+Y" Click="EditRedo_Click" />
-                    <Separator />
-                    <MenuItem Header="Cut" InputGesture="Ctrl+X" Click="EditCut_Click" />
-                    <MenuItem Header="Copy" InputGesture="Ctrl+C" Click="EditCopy_Click" />
-                    <MenuItem Header="Paste" InputGesture="Ctrl+V" Click="EditPaste_Click" />
-                    <Separator />
-                    <MenuItem Header="Select All" InputGesture="Ctrl+A" Click="EditSelectAll_Click" />
-                </MenuItem>
-                <MenuItem Header="_View">
-                    <MenuItem Header="File Status" Command="{Binding ActiveRepository.SelectSectionCommand}" CommandParameter="FileStatus" />
-                    <MenuItem Header="History" Command="{Binding ActiveRepository.SelectSectionCommand}" CommandParameter="History" />
-                    <MenuItem Header="Search" Command="{Binding ActiveRepository.SelectSectionCommand}" CommandParameter="Search" />
-                    <Separator />
-                    <MenuItem Header="Refresh" InputGesture="F5" Command="{Binding ActiveRepository.RefreshCommand}" />
-                </MenuItem>
-                <MenuItem Header="_Repository">
-                    <MenuItem Header="Commit…" Command="{Binding ActiveRepository.ShowCommitViewCommand}" />
-                    <MenuItem Header="Fetch" Command="{Binding ActiveRepository.FetchCommand}" />
-                    <MenuItem Header="Pull" Command="{Binding ActiveRepository.PullCommand}" />
-                    <MenuItem Header="Push" Command="{Binding ActiveRepository.PushCommand}" />
-                    <Separator />
-                    <MenuItem Header="Git Flow…" Command="{Binding ActiveRepository.GitFlowCommand}" />
-                    <Separator />
-                    <MenuItem Header="Add Submodule…" Command="{Binding ActiveRepository.AddSubmoduleCommand}" />
-                    <MenuItem Header="Update Submodules" Command="{Binding ActiveRepository.UpdateSubmodulesCommand}" />
-                    <Separator />
-                    <MenuItem Header="Settings…" Command="{Binding ActiveRepository.OpenSettingsCommand}" />
-                </MenuItem>
-                <MenuItem Header="_Actions">
-                    <MenuItem Header="New Branch…" Command="{Binding ActiveRepository.NewBranchCommand}" />
-                    <MenuItem Header="Merge…" Command="{Binding ActiveRepository.MergeCommand}" />
-                    <MenuItem Header="Stash Changes…" Command="{Binding ActiveRepository.StashChangesCommand}" />
-                    <MenuItem Header="New Tag…" Command="{Binding ActiveRepository.NewTagCommand}" />
-                    <Separator />
-                    <MenuItem Header="Open in Terminal" Command="{Binding ActiveRepository.OpenTerminalCommand}" />
-                    <MenuItem Header="Open in File Explorer" Command="{Binding ActiveRepository.OpenExplorerCommand}" />
-                </MenuItem>
-                <MenuItem Header="_Tools">
-                    <MenuItem Header="Launch SSH Agent" Command="{Binding LaunchSshAgentCommand}" />
-                    <MenuItem Header="Add SSH Key… (open ~/.ssh)" Command="{Binding OpenSshFolderCommand}" />
-                    <MenuItem Header="Generate SSH Key…" Command="{Binding GenerateSshKeyCommand}" />
-                    <Separator />
-                    <MenuItem Header="Options…" Command="{Binding OpenOptionsCommand}" />
-                </MenuItem>
-                <MenuItem Header="_Help">
-                    <MenuItem Header="Getting Started (README)" Command="{Binding OpenReadmeCommand}" />
-                    <MenuItem Header="Keyboard Shortcuts" Command="{Binding ShowShortcutsCommand}" />
-                    <Separator />
-                    <MenuItem Header="About OpenSourceTree" Command="{Binding AboutCommand}" />
-                </MenuItem>
-            </Menu>
+        <!-- ===== Row 2: repository tabs, rectangular like SourceTree ===== -->
+        <Border Name="TabStrip" DockPanel.Dock="Top" Height="32" Background="{DynamicResource B.Strip}"
+                PointerPressed="TitleBar_PointerPressed" DoubleTapped="TitleBar_DoubleTapped"
+                PointerMoved="Strip_PointerMoved" PointerReleased="Strip_PointerReleased">
+            <DockPanel LastChildFill="True">
+                <!-- scroll tabs left -->
+                <Button DockPanel.Dock="Left" Classes="stripBtn" Click="ScrollTabsLeft_Click">
+                    <Path Data="M5,1 L1,5 L5,9" Width="6" Height="10" />
+                </Button>
+                <!-- far right: hamburger with the list of open tabs -->
+                <Button DockPanel.Dock="Right" Name="TabListButton" Classes="stripBtn" Click="TabList_Click">
+                    <Path Data="M1,1 H13 M1,5 H13 M1,9 H13" Width="14" Height="10" />
+                </Button>
+                
+                <ScrollViewer Name="TabScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal">
+                    <ItemsControl Name="TabsHost" ItemsSource="{Binding Tabs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="5" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="tab" Classes.active="{Binding IsActive}"
+                                        BorderBrush="#22313F"
+                                        Height="30" MinWidth="110" MaxWidth="220"
+                                        PointerPressed="Tab_PointerPressed">
+                                    <DockPanel Margin="12,0,6,0">
+                                        <Button DockPanel.Dock="Right" Classes="tabClose" Content="✕" FontSize="9"
+                                                VerticalAlignment="Center"
+                                                Command="{Binding $parent[Window].DataContext.CloseTabCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Border DockPanel.Dock="Right" Background="#B7C3CF" CornerRadius="7"
+                                                Padding="6,1" Margin="6,0,2,0" VerticalAlignment="Center"
+                                                IsVisible="{Binding HasTabBadge}">
+                                            <TextBlock Text="{Binding TabBadge}" FontSize="10"
+                                                       Foreground="#22313F" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Title}" VerticalAlignment="Center"
+                                                   FontSize="12" TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+                
+                <!-- scroll tabs right -->
+                <Button DockPanel.Dock="Left" Classes="stripBtn" Click="ScrollTabsRight_Click">
+                    <Path Data="M1,1 L5,5 L1,9" Width="6" Height="10" />
+                </Button>
+                <!-- new tab -->
+                <Button DockPanel.Dock="Left" Classes="stripBtn" Command="{Binding NewTabCommand}" Padding="10,0">
+                    <Path Data="M7,0 V14 M0,7 H14" Width="14" Height="14" />
+                </Button>
+                <!-- new tab options dropdown -->
+                <Button DockPanel.Dock="Left" Name="NewTabMenuButton" Classes="stripBtn" Click="NewTabMenu_Click">
+                    <Path Data="M1,1 L5,5 L9,1" Width="10" Height="6" />
+                </Button>
+            </DockPanel>
         </Border>
 
         <!-- ===== Active tab content ===== -->

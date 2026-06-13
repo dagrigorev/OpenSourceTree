@@ -15,6 +15,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var settings = OpenSourceTree.Services.AppSettings.Instance;
+        OpenSourceTree.Services.ThemeService.Apply(settings.Theme);
+        OpenSourceTree.Services.Loc.Apply(settings.Language);
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var vm = new MainWindowViewModel();

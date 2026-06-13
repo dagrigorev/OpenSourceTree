@@ -3,44 +3,39 @@ using System.Collections.Generic;
 using System.IO;
 using Avalonia.Media;
 using Avalonia.Svg.Skia;
+using Svg.Skia;
 
 namespace OpenSourceTree.Views;
 
 /// <summary>
 /// Loads the application's SVG icons from the Assets/Icons folder on disk
 /// (plain files next to the executable — not embedded assembly resources).
+/// The stroke color is overridden per theme; ThemeService publishes the results
+/// as I.&lt;Name&gt; resources consumed via {DynamicResource}.
 /// </summary>
 public static class Icons
 {
+    /// <summary>Resource-key names (I.&lt;Name&gt;); file names are the lower-case variants.</summary>
+    public static readonly string[] Names =
+    {
+        "Commit", "Pull", "Push", "Fetch", "Branch", "Merge", "Stash", "Discard", "Tag",
+        "Terminal", "Explorer", "Settings", "Workspace", "Cloud", "GitFlow", "Submodule", "Plus"
+    };
+
     private static readonly Dictionary<string, IImage> Cache = new();
 
-    private static IImage Get(string name)
+    public static IImage Load(string name, string stroke)
     {
-        if (Cache.TryGetValue(name, out var cached))
+        string cacheKey = name + "|" + stroke;
+        if (Cache.TryGetValue(cacheKey, out var cached))
             return cached;
 
-        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Icons", name + ".svg");
-        var source = SvgSource.Load(path);
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Icons", name.ToLowerInvariant() + ".svg");
+        var svgText = File.ReadAllText(path)
+            .Replace("stroke=\"#9FB4C8\"", $"stroke=\"{stroke}\"", StringComparison.OrdinalIgnoreCase);
+        var source = SvgSource.LoadFromSvg(svgText);
         var image = new SvgImage { Source = source };
-        Cache[name] = image;
+        Cache[cacheKey] = image;
         return image;
     }
-
-    public static IImage Commit => Get("commit");
-    public static IImage Pull => Get("pull");
-    public static IImage Push => Get("push");
-    public static IImage Fetch => Get("fetch");
-    public static IImage Branch => Get("branch");
-    public static IImage Merge => Get("merge");
-    public static IImage Stash => Get("stash");
-    public static IImage Discard => Get("discard");
-    public static IImage Tag => Get("tag");
-    public static IImage Terminal => Get("terminal");
-    public static IImage Explorer => Get("explorer");
-    public static IImage Settings => Get("settings");
-    public static IImage Workspace => Get("workspace");
-    public static IImage Cloud => Get("cloud");
-    public static IImage GitFlow => Get("gitflow");
-    public static IImage Submodule => Get("submodule");
-    public static IImage Plus => Get("plus");
 }
