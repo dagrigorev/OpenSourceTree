@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -363,7 +363,10 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
                     sortTopological: HistorySortIndex == 1,
                     maxCount: AppSettings.Instance.HistoryLimit);
                 var graph = GraphBuilder.Build(commits);
-                var rows = commits.Select((c, i) => new CommitRowViewModel(c, graph[i], this)).ToList();
+                var pushed = _git.GetPushedShas(commits.Select(c => c.Sha));
+                var rows = commits
+                    .Select((c, i) => new CommitRowViewModel(c, graph[i], this, isLocal: !pushed.Contains(c.Sha)))
+                    .ToList();
                 var sig = _git.GetSignature();
                 return new
                 {
@@ -715,6 +718,55 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
             return;
 
         await RunGitAsync(() => _git.RunInteractiveRebase(baseSha, steps));
+    }
+
+    // ---------- Edit commit message ----------
+
+    /// <summary>
+    /// Reword a commit that has not been pushed yet. The tip is amended; an older commit is
+    /// reworded by replaying its descendants, so its children get new SHAs.
+    /// </summary>
+    public async Task EditCommitMessageAsync(string sha)
+    {
+        const string title = "Edit commit message";
+
+        bool blocked = await RunReadAsync(_git.HasBlockingChanges);
+        if (blocked)
+        {
+            await Ui.ShowErrorAsync(title, "Commit or stash your changes first.");
+            return;
+        }
+
+        string current;
+        bool isTip;
+        try
+        {
+            current = await RunReadAsync(() => _git.GetCommitMessage(sha));
+            isTip = await RunReadAsync(() => _git.HeadTipSha) == sha;
+        }
+        catch (Exception ex)
+        {
+            await Ui.ShowErrorAsync(title, ex.Message);
+            return;
+        }
+
+        string prompt = isTip
+            ? "This commit is local; the new message is applied by amending it."
+            : "This commit is local. Rewriting its message also gives every commit above it a new SHA.";
+
+        var message = await Ui.ShowMultilineInputAsync(title, prompt, current.TrimEnd());
+        if (message is null)
+            return;
+        message = message.TrimEnd();
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            await Ui.ShowErrorAsync(title, "The commit message cannot be empty.");
+            return;
+        }
+        if (message == current.TrimEnd())
+            return;
+
+        await RunGitAsync(() => _git.RewordCommit(sha, message + "\n"));
     }
 
     // ---------- Submodules ----------
