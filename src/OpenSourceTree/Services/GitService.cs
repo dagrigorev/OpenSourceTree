@@ -180,7 +180,36 @@ public sealed class GitService : IDisposable
         foreach (var e in entries.Where(e => e.Kind == FileChangeKind.Untracked))
         {
             var full = Path.Combine(WorkingDirectory, e.Path);
-            if (File.Exists(full)) File.Delete(full);
+            if (File.Exists(full))
+            {
+                File.Delete(full);
+                RemoveEmptyParents(Path.GetDirectoryName(full));
+            }
+            else if (Directory.Exists(full))
+            {
+                // status can report a whole untracked directory as one entry
+                Directory.Delete(full, recursive: true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes directories left empty by discarding untracked files, stopping at the working
+    /// directory root so nothing outside the repository is ever touched.
+    /// </summary>
+    private void RemoveEmptyParents(string? directory)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(WorkingDirectory));
+        while (!string.IsNullOrEmpty(directory))
+        {
+            var current = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+            if (string.Equals(current, root, StringComparison.OrdinalIgnoreCase) ||
+                !current.StartsWith(root, StringComparison.OrdinalIgnoreCase) ||
+                !Directory.Exists(current) ||
+                Directory.EnumerateFileSystemEntries(current).Any())
+                return;
+            Directory.Delete(current);
+            directory = Path.GetDirectoryName(current);
         }
     }
 
@@ -279,7 +308,7 @@ public sealed class GitService : IDisposable
     {
         var commit = _repo.Lookup<Commit>(sha) ?? throw new ArgumentException($"Unknown commit {sha}");
         var parentTree = commit.Parents.FirstOrDefault()?.Tree;
-        var changes = _repo.Diff.Compare<TreeChanges>(parentTree, commit.Tree);
+        using var changes = _repo.Diff.Compare<TreeChanges>(parentTree, commit.Tree);
         return changes.Select(ch => new FileStatusEntry(ch.Path, MapChangeKind(ch.Status), false, ch.OldPath != ch.Path ? ch.OldPath : null))
             .OrderBy(e => e.Path, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -300,7 +329,7 @@ public sealed class GitService : IDisposable
     {
         var commit = _repo.Lookup<Commit>(sha) ?? throw new ArgumentException($"Unknown commit {sha}");
         var parentTree = commit.Parents.FirstOrDefault()?.Tree;
-        var patch = _repo.Diff.Compare<Patch>(parentTree, commit.Tree, new[] { path }, compareOptions: DiffOptions);
+        using var patch = _repo.Diff.Compare<Patch>(parentTree, commit.Tree, new[] { path }, compareOptions: DiffOptions);
         return patch.Content;
     }
 
@@ -308,13 +337,13 @@ public sealed class GitService : IDisposable
     {
         if (staged)
         {
-            var patch = _repo.Diff.Compare<Patch>(_repo.Head.Tip?.Tree, DiffTargets.Index, new[] { path },
+            using var patch = _repo.Diff.Compare<Patch>(_repo.Head.Tip?.Tree, DiffTargets.Index, new[] { path },
                 null, DiffOptions);
             return patch.Content;
         }
         else
         {
-            var patch = _repo.Diff.Compare<Patch>(new[] { path }, true, null, DiffOptions);
+            using var patch = _repo.Diff.Compare<Patch>(new[] { path }, true, null, DiffOptions);
             return patch.Content;
         }
     }

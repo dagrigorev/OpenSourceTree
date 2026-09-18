@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -21,7 +22,7 @@ public static class GitCliService
         try
         {
             string? version = null;
-            await RunAsync(null, "--version", line =>
+            await RunAsync(null, new[] { "--version" }, line =>
             {
                 if (line.StartsWith("git version", StringComparison.OrdinalIgnoreCase))
                     version = line;
@@ -57,7 +58,13 @@ public static class GitCliService
                 CreateNoWindow = true
             };
             using var p = Process.Start(psi);
-            p!.WaitForExit(5000);
+            if (!p!.WaitForExit(5000))
+            {
+                // A hung probe tells us nothing; treat git as unavailable rather than
+                // reading ExitCode, which throws while the process is still running.
+                try { p.Kill(entireProcessTree: true); } catch { /* already gone */ }
+                return null;
+            }
             if (p.ExitCode == 0)
             {
                 _gitPath = probe;
@@ -71,13 +78,17 @@ public static class GitCliService
         return null;
     }
 
-    public static async Task<int> RunAsync(string? workingDirectory, string arguments,
+    /// <summary>
+    /// Runs git with each argument passed separately, so values that contain spaces or quotes
+    /// (URLs, branch and submodule paths) cannot break out into extra arguments.
+    /// </summary>
+    public static async Task<int> RunAsync(string? workingDirectory, string[] arguments,
         Action<string> onOutput)
     {
         var git = FindGit() ?? throw new InvalidOperationException(
             "git executable not found on PATH. Install git to use network operations.");
 
-        var psi = new ProcessStartInfo(git, arguments)
+        var psi = new ProcessStartInfo(git)
         {
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -86,12 +97,14 @@ public static class GitCliService
             StandardOutputEncoding = System.Text.Encoding.UTF8,
             StandardErrorEncoding = System.Text.Encoding.UTF8
         };
+        foreach (var a in arguments)
+            psi.ArgumentList.Add(a);
         if (workingDirectory is not null)
             psi.WorkingDirectory = workingDirectory;
         // Never let git block on an interactive credential prompt inside a GUI app.
         psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
 
-        onOutput($"$ git {arguments}");
+        onOutput($"$ git {string.Join(' ', arguments.Select(Quote))}");
 
         using var process = new Process { StartInfo = psi };
         process.OutputDataReceived += (_, e) => { if (e.Data is not null) onOutput(e.Data); };
@@ -104,17 +117,21 @@ public static class GitCliService
         return process.ExitCode;
     }
 
+    /// <summary>Renders an argument for the echoed command line only — never used to launch git.</summary>
+    private static string Quote(string arg) =>
+        arg.Length > 0 && arg.IndexOfAny(new[] { ' ', '"', '\t' }) < 0 ? arg : $"\"{arg.Replace("\"", "\\\"")}\"";
+
     public static Task<int> FetchAsync(string repoDir, Action<string> onOutput) =>
-        RunAsync(repoDir, "fetch --all --prune --progress", onOutput);
+        RunAsync(repoDir, new[] { "fetch", "--all", "--prune", "--progress" }, onOutput);
 
     public static Task<int> PullAsync(string repoDir, Action<string> onOutput) =>
-        RunAsync(repoDir, "pull --progress", onOutput);
+        RunAsync(repoDir, new[] { "pull", "--progress" }, onOutput);
 
     public static Task<int> PushAsync(string repoDir, string? branch, Action<string> onOutput) =>
         RunAsync(repoDir, branch is null
-            ? "push --progress"
-            : $"push --progress -u origin \"{branch}\"", onOutput);
+            ? new[] { "push", "--progress" }
+            : new[] { "push", "--progress", "-u", "origin", branch }, onOutput);
 
     public static Task<int> CloneAsync(string url, string targetDir, Action<string> onOutput) =>
-        RunAsync(null, $"clone --progress \"{url}\" \"{targetDir}\"", onOutput);
+        RunAsync(null, new[] { "clone", "--progress", "--", url, targetDir }, onOutput);
 }

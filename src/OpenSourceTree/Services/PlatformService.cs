@@ -6,14 +6,26 @@ namespace OpenSourceTree.Services;
 
 public static class PlatformService
 {
+    /// <summary>
+    /// Builds a start info with each argument passed separately; hand-quoting a path into a
+    /// single argument string breaks on quotes and on paths the user did not type themselves.
+    /// </summary>
+    private static ProcessStartInfo Psi(string file, bool shellExecute, params string[] args)
+    {
+        var psi = new ProcessStartInfo(file) { UseShellExecute = shellExecute };
+        foreach (var a in args)
+            psi.ArgumentList.Add(a);
+        return psi;
+    }
+
     public static void OpenFileExplorer(string directory)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{directory}\"") { UseShellExecute = true });
+            Process.Start(Psi("explorer.exe", true, directory));
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            Process.Start("open", $"\"{directory}\"");
+            Process.Start(Psi("open", false, directory));
         else
-            Process.Start("xdg-open", $"\"{directory}\"");
+            Process.Start(Psi("xdg-open", false, directory));
     }
 
     public static void OpenSshFolder()
@@ -42,7 +54,7 @@ public static class PlatformService
             {
                 try
                 {
-                    Process.Start(new ProcessStartInfo(term, "-e ssh-keygen -t ed25519") { UseShellExecute = false });
+                    Process.Start(Psi(term, false, "-e", "ssh-keygen", "-t", "ed25519"));
                     return;
                 }
                 catch
@@ -74,11 +86,11 @@ public static class PlatformService
     public static void OpenInEditor(string filePath)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            Process.Start(new ProcessStartInfo("notepad.exe", $"\"{filePath}\"") { UseShellExecute = true });
+            Process.Start(Psi("notepad.exe", true, filePath));
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            Process.Start("open", $"-t \"{filePath}\"");
+            Process.Start(Psi("open", false, "-t", filePath));
         else
-            Process.Start("xdg-open", $"\"{filePath}\"");
+            Process.Start(Psi("xdg-open", false, filePath));
     }
 
     public static void OpenTerminal(string directory)
@@ -88,7 +100,7 @@ public static class PlatformService
             // Prefer Windows Terminal, fall back to PowerShell.
             try
             {
-                Process.Start(new ProcessStartInfo("wt.exe", $"-d \"{directory}\"") { UseShellExecute = true });
+                Process.Start(Psi("wt.exe", true, "-d", directory));
             }
             catch
             {
@@ -101,7 +113,7 @@ public static class PlatformService
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            Process.Start("open", $"-a Terminal \"{directory}\"");
+            Process.Start(Psi("open", false, "-a", "Terminal", directory));
         }
         else
         {

@@ -352,6 +352,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     {
         await _gate.WaitAsync();
         IsBusy = true;
+        string? failure = null;
         try
         {
             var snapshot = await Task.Run(() =>
@@ -408,13 +409,18 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
         }
         catch (Exception ex)
         {
-            await Ui.ShowErrorAsync("Refresh failed", ex.Message);
+            failure = ex.Message;
         }
         finally
         {
             IsBusy = false;
             _gate.Release();
         }
+
+        // Reporting happens after the gate is released: an unacknowledged modal would
+        // otherwise block every other repository operation behind it.
+        if (failure is not null)
+            await Ui.ShowErrorAsync("Refresh failed", failure);
     }
 
     private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> items)
@@ -433,25 +439,49 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     {
         await _gate.WaitAsync();
         IsBusy = true;
+        string? failure = null;
         try
         {
             await Task.Run(action);
         }
         catch (Exception ex)
         {
-            await Ui.ShowErrorAsync("Git operation failed", ex.Message);
+            failure = ex.Message;
         }
         finally
         {
             IsBusy = false;
             _gate.Release();
         }
+        if (failure is not null)
+            await Ui.ShowErrorAsync("Git operation failed", failure);
         if (refresh)
             await RefreshAsync();
     }
 
+    /// <summary>
+    /// Reads from the repository on a background thread while holding the gate. LibGit2Sharp's
+    /// <see cref="GitService"/> is not thread-safe, so every access — reads included — has to be
+    /// serialised against refreshes and write operations.
+    /// </summary>
+    private async Task<T> RunReadAsync<T>(Func<T> read)
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            return await Task.Run(read);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     private async Task RunCliAsync(string title, Func<Action<string>, Task<int>> operation)
     {
+        // The gate also keeps two network operations (fetch + push, say) from overlapping
+        // and from clearing each other's busy state.
+        await _gate.WaitAsync();
         var output = Ui.ShowOutput($"{title} — {Title}");
         IsBusy = true;
         try
@@ -466,6 +496,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
         {
             IsBusy = false;
             output.Complete();
+            _gate.Release();
         }
         await RefreshAsync();
     }
@@ -556,8 +587,8 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     [RelayCommand]
     private async Task OpenSettings()
     {
-        var user = await Task.Run(_git.GetUserConfigEx);
-        var remotes = await Task.Run(_git.GetRemoteList);
+        var user = await RunReadAsync(_git.GetUserConfigEx);
+        var remotes = await RunReadAsync(_git.GetRemoteList);
         var result = await Ui.ShowRepoSettingsAsync(Title, remotes, user, _git.GitIgnorePath);
         if (result is null)
             return;
@@ -587,7 +618,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     [RelayCommand]
     private async Task GitFlow()
     {
-        var cfg = await Task.Run(_git.GetGitFlowConfig);
+        var cfg = await RunReadAsync(_git.GetGitFlowConfig);
 
         if (!cfg.IsInitialized)
         {
@@ -656,7 +687,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
 
     public async Task RebaseInteractiveAsync(string baseSha)
     {
-        bool blocked = await Task.Run(_git.HasBlockingChanges);
+        bool blocked = await RunReadAsync(_git.HasBlockingChanges);
         if (blocked)
         {
             await Ui.ShowErrorAsync("Interactive rebase", "Commit or stash your changes first.");
@@ -666,7 +697,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
         List<CommitInfo> range;
         try
         {
-            range = await Task.Run(() => _git.GetLinearRange(baseSha));
+            range = await RunReadAsync(() => _git.GetLinearRange(baseSha));
         }
         catch (Exception ex)
         {
@@ -702,18 +733,19 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
             return;
         await RunCliAsync("Add submodule",
             sink => GitCliService.RunAsync(RepoPath,
-                $"submodule add \"{entry.Value.Url}\" \"{entry.Value.Path}\"", sink));
+                new[] { "submodule", "add", "--", entry.Value.Url, entry.Value.Path }, sink));
     }
 
     [RelayCommand]
     private Task UpdateSubmodules() =>
         RunCliAsync("Update submodules",
-            sink => GitCliService.RunAsync(RepoPath, "submodule update --init --recursive", sink));
+            sink => GitCliService.RunAsync(RepoPath,
+                new[] { "submodule", "update", "--init", "--recursive" }, sink));
 
     public Task UpdateSubmoduleAsync(SubmoduleItemViewModel submodule) =>
         RunCliAsync($"Update {submodule.Name}",
             sink => GitCliService.RunAsync(RepoPath,
-                $"submodule update --init --recursive -- \"{submodule.Info.Path}\"", sink));
+                new[] { "submodule", "update", "--init", "--recursive", "--", submodule.Info.Path }, sink));
 
     public void OpenSubmodule(SubmoduleItemViewModel submodule)
     {
@@ -849,7 +881,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     {
         try
         {
-            var files = await Task.Run(() => _git.GetCommitChanges(sha));
+            var files = await RunReadAsync(() => _git.GetCommitChanges(sha));
             if (SelectedCommit?.Sha != sha)
                 return;
             Replace(CommitFiles, files.Select(f => new FileStatusItemViewModel(f)));
@@ -872,7 +904,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     {
         try
         {
-            var text = await Task.Run(() => _git.GetCommitFileDiff(sha, path));
+            var text = await RunReadAsync(() => _git.GetCommitFileDiff(sha, path));
             if (SelectedCommit?.Sha != sha || SelectedCommitFile?.Path != path)
                 return;
             Replace(CommitDiffLines, DiffParser.Parse(text).Select(l => new DiffLineViewModel(l)));
@@ -905,7 +937,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
     {
         try
         {
-            var text = await Task.Run(() => _git.GetWorkdirFileDiff(path, staged));
+            var text = await RunReadAsync(() => _git.GetWorkdirFileDiff(path, staged));
             Replace(WorkDiffLines, DiffParser.Parse(text).Select(l => new DiffLineViewModel(l)));
         }
         catch (Exception ex)
@@ -928,7 +960,7 @@ public sealed partial class RepositoryViewModel : TabViewModelBase
 
     private async Task PrefillAmendMessageAsync()
     {
-        var message = await Task.Run(() => _git.GetHeadCommitMessage());
+        var message = await RunReadAsync(() => _git.GetHeadCommitMessage());
         if (AmendCommit && string.IsNullOrWhiteSpace(CommitMessage) && message is not null)
             CommitMessage = message.TrimEnd();
     }
