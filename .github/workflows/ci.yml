@@ -1,0 +1,160 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+
+jobs:
+  build:
+    name: ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The runner images ship several SDKs; pin the one the project targets.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # The .slnx solution needs an SDK newer than the one this project targets,
+      # so CI drives the project file the build scripts use.
+      - name: Restore
+        run: dotnet restore src/OpenSourceTree/OpenSourceTree.csproj
+
+      - name: Build
+        run: dotnet build src/OpenSourceTree/OpenSourceTree.csproj -c Release --no-restore -warnaserror
+
+      # There is no test project yet. Run one as soon as it exists rather than
+      # letting a green check stand for "dotnet test found nothing to do".
+      - name: Test
+        shell: bash
+        run: |
+          set -euo pipefail
+          projects=$(git ls-files '*[Tt]est*.csproj')
+          if [ -z "$projects" ]; then
+            echo "::notice::No test projects found — skipping dotnet test."
+            exit 0
+          fi
+          echo "$projects" | while read -r project; do
+            [ -n "$project" ] || continue
+            dotnet test "$project" -c Release --verbosity normal
+          done
+
+      # Publishing goes through the repository's own build scripts so CI and a
+      # local build stay the same thing.
+      - name: Publish (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./build.ps1 -Runtime ${{ matrix.rid }}
+
+      - name: Publish (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ./build.sh
+          ./build.sh ${{ matrix.rid }}
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenSourceTree-${{ matrix.rid }}
+          path: dist/${{ matrix.rid }}/
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Release
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    # Pauses here until a required reviewer approves the deployment.
+    environment: release
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version tag
+        id: version
+        shell: bash
+        run: |
+          version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' \
+            src/OpenSourceTree/OpenSourceTree.csproj | head -n1)
+          if [ -z "$version" ]; then
+            echo "::error::No <Version> found in src/OpenSourceTree/OpenSourceTree.csproj"
+            exit 1
+          fi
+          tag="v${version}.${{ github.run_number }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $tag"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package artifacts
+        id: package
+        shell: bash
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p packages
+          for dir in artifacts/OpenSourceTree-*; do
+            rid="${dir#artifacts/OpenSourceTree-}"
+            case "$rid" in
+              win-*) ( cd "$dir" && zip -qr "../../packages/OpenSourceTree-${TAG}-${rid}.zip" . ) ;;
+              # tar keeps the executable bit that a zip would drop.
+              *)     chmod +x "$dir/OpenSourceTree" || true
+                     tar -czf "packages/OpenSourceTree-${TAG}-${rid}.tar.gz" -C "$dir" . ;;
+            esac
+          done
+          ls -lh packages
+          if [ -z "$(ls -A packages)" ]; then
+            echo "::error::No packages were produced."
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --target "${{ github.sha }}" \
+            --title "$TAG" \
+            --generate-notes \
+            packages/*

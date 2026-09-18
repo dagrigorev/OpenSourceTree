@@ -42,14 +42,26 @@ public static class HostingService
         {
             if (!AvatarCache.TryGetValue(url, out task!))
             {
+                // Bounded so a long session browsing many accounts cannot grow it without limit.
+                if (AvatarCache.Count >= AvatarCacheLimit)
+                {
+                    foreach (var stale in AvatarOrder.Take(AvatarCache.Count - AvatarCacheLimit + 1).ToList())
+                    {
+                        AvatarCache.Remove(stale);
+                        AvatarOrder.Remove(stale);
+                    }
+                }
                 task = DownloadAvatarAsync(url);
                 AvatarCache[url] = task;
+                AvatarOrder.Add(url);
             }
         }
         return await task.ConfigureAwait(false);
     }
 
+    private const int AvatarCacheLimit = 256;
     private static readonly Dictionary<string, Task<byte[]?>> AvatarCache = new();
+    private static readonly List<string> AvatarOrder = new();
 
     private static async Task<byte[]?> DownloadAvatarAsync(string url)
     {

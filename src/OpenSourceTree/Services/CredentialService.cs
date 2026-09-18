@@ -10,8 +10,8 @@ namespace OpenSourceTree.Services;
 /// <summary>
 /// Stores hosting-account tokens in the operating system's credential store:
 /// Windows Credential Manager, the macOS keychain (via `security`) or libsecret
-/// (via `secret-tool`) on Linux. If none is available, falls back to an
-/// obfuscated file next to settings.json.
+/// (via `secret-tool`) on Linux. If none is available, falls back to a file next to
+/// settings.json — DPAPI-encrypted on Windows, owner-only and base64-encoded elsewhere.
 /// </summary>
 public static class CredentialService
 {
@@ -58,8 +58,8 @@ public static class CredentialService
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) CredDeleteW($"{Service}:{key}", CredTypeGeneric, 0);
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) RunQuiet("security", $"delete-generic-password -s \"{Service}\" -a \"{key}\"");
-            else RunQuiet("secret-tool", $"clear service \"{Service}\" account \"{key}\"");
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) RunQuiet("security", "delete-generic-password", "-s", Service, "-a", key);
+            else RunQuiet("secret-tool", "clear", "service", Service, "account", key);
         }
         catch
         {
@@ -145,33 +145,80 @@ public static class CredentialService
 
     // ---------- macOS keychain ----------
 
-    private static void MacWrite(string key, string secret) =>
-        RunQuiet("security", $"add-generic-password -U -s \"{Service}\" -a \"{key}\" -w \"{secret}\"", throwOnError: true);
+    /// <summary>
+    /// Writes through `security`, feeding the secret on standard input. Passing it as `-w &lt;secret&gt;`
+    /// would expose the token to every local user through the process list.
+    /// </summary>
+    private static void MacWrite(string key, string secret)
+    {
+        // `-w` without a value makes security read the password data from stdin.
+        // security asks for the password twice when it reads interactively; the extra copy is
+        // harmless when it only reads once, and stdin is closed straight after.
+        if (!RunWithSecretOnStdin("security", secret + "\n" + secret + "\n",
+                "add-generic-password", "-U", "-s", Service, "-a", key, "-w"))
+            throw new InvalidOperationException("security add-generic-password failed.");
+    }
 
     private static string? MacRead(string key)
     {
-        var output = RunCapture("security", $"find-generic-password -s \"{Service}\" -a \"{key}\" -w");
+        var output = RunCapture("security", "find-generic-password", "-s", Service, "-a", key, "-w");
         return string.IsNullOrEmpty(output) ? null : output.TrimEnd('\n', '\r');
     }
 
     // ---------- Linux libsecret ----------
 
-    private static bool LinuxWrite(string key, string secret)
+    private static bool LinuxWrite(string key, string secret) =>
+        RunWithSecretOnStdin("secret-tool", secret,
+            "store", "--label=" + Service, "service", Service, "account", key);
+
+    private static string? LinuxRead(string key)
     {
-        var psi = new ProcessStartInfo("secret-tool",
-            $"store --label=\"{Service}\" service \"{Service}\" account \"{key}\"")
+        var output = RunCapture("secret-tool", "lookup", "service", Service, "account", key);
+        return string.IsNullOrEmpty(output) ? null : output.TrimEnd('\n', '\r');
+    }
+
+    // ---------- process helpers ----------
+
+    // Arguments always go through ArgumentList: the runtime escapes each one for the
+    // platform, so a key or secret containing quotes cannot break out into extra arguments.
+    private static ProcessStartInfo Psi(string file, string[] args)
+    {
+        var psi = new ProcessStartInfo(file)
         {
             UseShellExecute = false,
-            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        foreach (var a in args)
+            psi.ArgumentList.Add(a);
+        return psi;
+    }
+
+    private const int ProcessTimeoutMs = 10000;
+
+    private static void RunQuiet(string file, params string[] args)
+    {
+        using var p = Process.Start(Psi(file, args))!;
+        if (!p.WaitForExit(ProcessTimeoutMs))
+            TryKill(p);
+    }
+
+    /// <summary>Runs a helper, feeding <paramref name="stdin"/> to it; true when it exited with 0.</summary>
+    private static bool RunWithSecretOnStdin(string file, string stdin, params string[] args)
+    {
+        var psi = Psi(file, args);
+        psi.RedirectStandardInput = true;
         try
         {
             using var p = Process.Start(psi)!;
-            p.StandardInput.Write(secret);
+            p.StandardInput.Write(stdin);
             p.StandardInput.Close();
-            p.WaitForExit(10000);
+            if (!p.WaitForExit(ProcessTimeoutMs))
+            {
+                TryKill(p);
+                return false;
+            }
             return p.ExitCode == 0;
         }
         catch
@@ -180,43 +227,23 @@ public static class CredentialService
         }
     }
 
-    private static string? LinuxRead(string key)
+    private static void TryKill(Process p)
     {
-        var output = RunCapture("secret-tool", $"lookup service \"{Service}\" account \"{key}\"");
-        return string.IsNullOrEmpty(output) ? null : output.TrimEnd('\n', '\r');
+        try { p.Kill(entireProcessTree: true); }
+        catch { /* already gone */ }
     }
 
-    // ---------- process helpers ----------
-
-    private static void RunQuiet(string file, string args, bool throwOnError = false)
-    {
-        var psi = new ProcessStartInfo(file, args)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-        using var p = Process.Start(psi)!;
-        p.WaitForExit(10000);
-        if (throwOnError && p.ExitCode != 0)
-            throw new InvalidOperationException($"{file} exited with {p.ExitCode}.");
-    }
-
-    private static string? RunCapture(string file, string args)
+    private static string? RunCapture(string file, params string[] args)
     {
         try
         {
-            var psi = new ProcessStartInfo(file, args)
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-            using var p = Process.Start(psi)!;
+            using var p = Process.Start(Psi(file, args))!;
             string output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(10000);
+            if (!p.WaitForExit(ProcessTimeoutMs))
+            {
+                TryKill(p);
+                return null;
+            }
             return p.ExitCode == 0 ? output : null;
         }
         catch
@@ -225,7 +252,57 @@ public static class CredentialService
         }
     }
 
-    // ---------- file fallback (base64-obfuscated, local only) ----------
+    // ---------- file fallback (DPAPI on Windows, owner-only file elsewhere) ----------
+
+    /// <summary>Marks a value that was encrypted with DPAPI rather than merely base64-encoded.</summary>
+    private const string DpapiPrefix = "dpapi:";
+
+    [DllImport("crypt32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool CryptProtectData(ref DATA_BLOB input, string? description, IntPtr entropy,
+        IntPtr reserved, IntPtr prompt, uint flags, out DATA_BLOB output);
+
+    [DllImport("crypt32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool CryptUnprotectData(ref DATA_BLOB input, IntPtr description, IntPtr entropy,
+        IntPtr reserved, IntPtr prompt, uint flags, out DATA_BLOB output);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr LocalFree(IntPtr handle);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DATA_BLOB
+    {
+        public uint cbData;
+        public IntPtr pbData;
+    }
+
+    private static byte[]? DpapiTransform(byte[] data, bool protect)
+    {
+        var handle = Marshal.AllocHGlobal(data.Length);
+        var input = new DATA_BLOB { cbData = (uint)data.Length, pbData = handle };
+        var output = default(DATA_BLOB);
+        try
+        {
+            Marshal.Copy(data, 0, handle, data.Length);
+            bool ok = protect
+                ? CryptProtectData(ref input, Service, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0, out output)
+                : CryptUnprotectData(ref input, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0, out output);
+            if (!ok)
+                return null;
+            var result = new byte[output.cbData];
+            Marshal.Copy(output.pbData, result, 0, result.Length);
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(handle);
+            if (output.pbData != IntPtr.Zero)
+                LocalFree(output.pbData);
+        }
+    }
 
     private static string FallbackFile =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -249,23 +326,52 @@ public static class CredentialService
     {
         Directory.CreateDirectory(Path.GetDirectoryName(FallbackFile)!);
         File.WriteAllText(FallbackFile, JsonSerializer.Serialize(map));
+        RestrictToOwner(FallbackFile);
+    }
+
+    /// <summary>Keeps the fallback store readable by its owner only (no-op on Windows, where ACLs apply).</summary>
+    private static void RestrictToOwner(string path)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return;
+        try
+        {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        catch
+        {
+            // best-effort
+        }
     }
 
     private static void FileWrite(string key, string secret)
     {
         var map = FileLoad();
-        map[key] = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(secret));
+        var plain = System.Text.Encoding.UTF8.GetBytes(secret);
+        string? stored = null;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var sealed_ = DpapiTransform(plain, protect: true);
+            if (sealed_ is not null)
+                stored = DpapiPrefix + Convert.ToBase64String(sealed_);
+        }
+        map[key] = stored ?? Convert.ToBase64String(plain);
         FileSave(map);
     }
 
     private static string? FileRead(string key)
     {
         var map = FileLoad();
-        if (!map.TryGetValue(key, out var b64))
+        if (!map.TryGetValue(key, out var value))
             return null;
         try
         {
-            return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(b64));
+            if (value.StartsWith(DpapiPrefix, StringComparison.Ordinal))
+            {
+                var plain = DpapiTransform(Convert.FromBase64String(value[DpapiPrefix.Length..]), protect: false);
+                return plain is null ? null : System.Text.Encoding.UTF8.GetString(plain);
+            }
+            return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(value));
         }
         catch
         {
