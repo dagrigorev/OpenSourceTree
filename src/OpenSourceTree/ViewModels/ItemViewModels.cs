@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
@@ -25,7 +25,7 @@ public sealed class RefBadgeViewModel
     public IBrush Background { get; }
     public IBrush Foreground { get; }
 
-    private static readonly IBrush HeadBg = new ImmutableSolidColorBrush(Color.Parse("#2E74B5"));
+    private static readonly IBrush HeadBg = new ImmutableSolidColorBrush(Color.Parse("#1668D8"));
     private static readonly IBrush LocalBg = new ImmutableSolidColorBrush(Color.Parse("#3A4A5A"));
     private static readonly IBrush RemoteBg = new ImmutableSolidColorBrush(Color.Parse("#52453A"));
     private static readonly IBrush TagBg = new ImmutableSolidColorBrush(Color.Parse("#B58A2E"));
@@ -68,9 +68,14 @@ public sealed class CommitRowViewModel
     public ICommand ResetHardCommand { get; }
     public ICommand TagCommand { get; }
     public ICommand RebaseInteractiveCommand { get; }
+    public ICommand EditMessageCommand { get; }
 
-    public CommitRowViewModel(CommitInfo commit, GraphRow graph, RepositoryViewModel repo)
+    /// <summary>True while the commit is not reachable from any remote — its message may be edited.</summary>
+    public bool IsLocal { get; }
+
+    public CommitRowViewModel(CommitInfo commit, GraphRow graph, RepositoryViewModel repo, bool isLocal = false)
     {
+        IsLocal = isLocal;
         Commit = commit;
         Graph = graph;
         _repo = repo;
@@ -83,6 +88,7 @@ public sealed class CommitRowViewModel
         ResetHardCommand = new AsyncRelayCommand(() => _repo.ResetToCommitAsync(Sha, "hard"));
         TagCommand = new AsyncRelayCommand(() => _repo.TagCommitAsync(Sha));
         RebaseInteractiveCommand = new AsyncRelayCommand(() => _repo.RebaseInteractiveAsync(Sha));
+        EditMessageCommand = new AsyncRelayCommand(() => _repo.EditCommitMessageAsync(Sha));
     }
 }
 
@@ -100,7 +106,7 @@ public sealed class FileStatusItemViewModel
     private static readonly IBrush Green = new ImmutableSolidColorBrush(Color.Parse("#5CB85C"));
     private static readonly IBrush Orange = new ImmutableSolidColorBrush(Color.Parse("#E8A33D"));
     private static readonly IBrush Red = new ImmutableSolidColorBrush(Color.Parse("#D9534F"));
-    private static readonly IBrush Blue = new ImmutableSolidColorBrush(Color.Parse("#5BC0DE"));
+    private static readonly IBrush Blue = new ImmutableSolidColorBrush(Color.Parse("#3B9EFF"));
     private static readonly IBrush Purple = new ImmutableSolidColorBrush(Color.Parse("#B07CC6"));
 
     public FileStatusItemViewModel(FileStatusEntry entry, RepositoryViewModel? repo = null)

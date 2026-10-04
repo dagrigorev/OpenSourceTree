@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -148,6 +148,55 @@ public static class Ui
 
         await dialog.ShowDialog(owner);
         return (text, check.IsChecked == true);
+    }
+
+    /// <summary>Multi-line text prompt (commit messages). Returns null when cancelled.</summary>
+    public static async Task<string?> ShowMultilineInputAsync(string title, string prompt, string initial = "")
+    {
+        var owner = MainWindow;
+        if (owner is null)
+            return null;
+
+        var dialog = MakeDialog(title, 560, 360);
+        dialog.CanResize = true;
+
+        string? text = null;
+        var input = new TextBox
+        {
+            Text = initial,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            FontFamily = new FontFamily("Cascadia Mono,Consolas,Menlo,monospace")
+        };
+
+        var ok = MakeButton("OK", accent: true);
+        var cancel = MakeButton("Cancel");
+        ok.Click += (_, _) => { text = input.Text ?? ""; dialog.Close(); };
+        cancel.Click += (_, _) => dialog.Close();
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 12, 0, 0)
+        };
+        buttons.Children.Add(cancel);
+        buttons.Children.Add(ok);
+
+        var grid = new Grid { Margin = new Thickness(20), RowDefinitions = new RowDefinitions("Auto,*,Auto") };
+        var label = new TextBlock { Text = prompt, Margin = new Thickness(0, 0, 0, 8), TextWrapping = TextWrapping.Wrap };
+        Grid.SetRow(label, 0);
+        Grid.SetRow(input, 1);
+        Grid.SetRow(buttons, 2);
+        grid.Children.Add(label);
+        grid.Children.Add(input);
+        grid.Children.Add(buttons);
+        dialog.Content = grid;
+        dialog.Opened += (_, _) => input.Focus();
+
+        await dialog.ShowDialog(owner);
+        return text;
     }
 
     public static async Task<string?> ShowPickAsync(string title, string prompt, IReadOnlyList<string> options)

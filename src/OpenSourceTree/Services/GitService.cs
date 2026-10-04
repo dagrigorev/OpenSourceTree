@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -555,6 +555,88 @@ public sealed class GitService : IDisposable
         }
         commits.Reverse();
         return commits;
+    }
+
+    /// <summary>
+    /// Returns the subset of <paramref name="shas"/> already reachable from a remote-tracking
+    /// branch. Anything outside that set is still local and may safely be reworded.
+    /// </summary>
+    public HashSet<string> GetPushedShas(IEnumerable<string> shas)
+    {
+        var wanted = new HashSet<string>(shas, StringComparer.Ordinal);
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        var remoteTips = _repo.Branches
+            .Where(b => b.IsRemote && b.Tip is not null)
+            .Select(b => (Commit)b.Tip!)
+            .ToList();
+        if (remoteTips.Count == 0 || wanted.Count == 0)
+            return result;
+
+        var filter = new CommitFilter
+        {
+            SortBy = CommitSortStrategies.Topological,
+            IncludeReachableFrom = remoteTips
+        };
+
+        int budget = 50000;
+        foreach (var c in _repo.Commits.QueryBy(filter))
+        {
+            if (wanted.Remove(c.Sha))
+            {
+                result.Add(c.Sha);
+                if (wanted.Count == 0)
+                    break;
+            }
+            if (--budget <= 0)
+            {
+                // Walk cut short on a huge history: treat the rest as pushed so the
+                // reword action stays hidden rather than offered for a published commit.
+                foreach (var sha in wanted)
+                    result.Add(sha);
+                break;
+            }
+        }
+        return result;
+    }
+
+    public string GetCommitMessage(string sha) =>
+        (_repo.Lookup<Commit>(sha) ?? throw new InvalidOperationException($"Unknown commit {sha}."))
+            .Message;
+
+    /// <summary>
+    /// Replaces the message of a local commit. The tip is amended in place; an older commit is
+    /// reworded by replaying its descendants (same rules and safety net as interactive rebase).
+    /// </summary>
+    public void RewordCommit(string sha, string newMessage)
+    {
+        if (string.IsNullOrWhiteSpace(newMessage))
+            throw new InvalidOperationException("The commit message cannot be empty.");
+
+        var commit = _repo.Lookup<Commit>(sha)
+            ?? throw new InvalidOperationException($"Unknown commit {sha}.");
+        if (HasBlockingChanges())
+            throw new InvalidOperationException("Commit or stash your changes before editing a commit message.");
+
+        if (_repo.Head.Tip?.Sha == commit.Sha && !_repo.Info.IsHeadDetached)
+        {
+            _repo.Commit(newMessage, commit.Author, GetSignature(),
+                new CommitOptions { AmendPreviousCommit = true });
+            return;
+        }
+
+        var parents = commit.Parents.ToList();
+        if (parents.Count != 1)
+            throw new InvalidOperationException(
+                "Only commits with exactly one parent can be reworded.");
+
+        var range = GetLinearRange(parents[0].Sha);
+        var steps = range
+            .Select(c => new RebaseStep(
+                c.Sha,
+                c.Sha == commit.Sha ? RebaseAction.Reword : RebaseAction.Pick,
+                c.Sha == commit.Sha ? newMessage : null))
+            .ToList();
+        RunInteractiveRebase(parents[0].Sha, steps);
     }
 
     public bool HasBlockingChanges() =>

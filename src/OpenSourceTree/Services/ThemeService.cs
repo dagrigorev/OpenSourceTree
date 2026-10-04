@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Styling;
@@ -27,11 +27,11 @@ public static class ThemePalette
         static IBrush B(string hex) => new ImmutableSolidColorBrush(Color.Parse(hex));
         DiffAddedBg = B(dark ? "#1A3322" : "#DDF4E4");
         DiffRemovedBg = B(dark ? "#3A2022" : "#FBE5E8");
-        DiffHunkBg = B(dark ? "#1E3245" : "#DEEBF7");
+        DiffHunkBg = B(dark ? "#152F55" : "#D6E8FF");
         DiffHeaderBg = B(dark ? "#1B2530" : "#EEF2F6");
         DiffAddedFg = B(dark ? "#7FD49B" : "#1A7F37");
         DiffRemovedFg = B(dark ? "#E89A9A" : "#C0392B");
-        DiffHunkFg = B(dark ? "#6FA8DC" : "#2E74B5");
+        DiffHunkFg = B(dark ? "#6FB2FF" : "#1668D8");
         DiffNormalFg = B(dark ? "#C9D4DF" : "#24313F");
         DiffDimFg = B(dark ? "#6E8295" : "#8095A8");
     }
@@ -60,7 +60,7 @@ public static class ThemeService
         B("Window", "#1C2733", "#F2F5F8");
         // The tab strip is SourceTree's vivid accent blue in both themes; tabs are dark
         // navy with light text, the active one slightly darker and marked by its ✕.
-        B("Strip", "#1B72CE", "#1B72CE");
+        B("Strip", "#1466E6", "#1466E6");
         B("TabInactive", "#161C28", "#161C28");
         B("TabHover", "#1F2735", "#1F2735");
         B("TabActive", "#0F1420", "#0F1420");
@@ -80,8 +80,8 @@ public static class ThemeService
         B("Hover", "#243546", "#D3DDE7");
         B("Chip", "#243546", "#D7E0E9");
         B("ChipText", "#9FB4C8", "#46586A");
-        B("Accent", "#2E74B5", "#2E74B5");
-        B("AccentHover", "#3A84C8", "#3A84C8");
+        B("Accent", "#1668D8", "#1668D8");
+        B("AccentHover", "#2B80F0", "#2B80F0");
 
         // Icons are SVG files tinted per theme and exposed as I.<Name> image resources.
         string stroke = dark ? "#9FB4C8" : "#46586A";

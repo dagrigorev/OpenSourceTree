@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Avalonia;
 
 namespace OpenSourceTree.Services;
@@ -104,6 +104,7 @@ public static class Loc
         ["ResetHardDots"] = "Reset current branch to this commit (hard)…",
         ["RebaseDots"] = "Rebase children of this commit interactively…",
         ["CopySha"] = "Copy SHA",
+        ["EditMessageDots"] = "Edit commit message…",
         ["StageItem"] = "Stage", ["UnstageItem"] = "Unstage",
         ["DiscardDots"] = "Discard changes…",
         // dialogs / options
@@ -177,6 +178,7 @@ public static class Loc
         ["ResetHardDots"] = "Сбросить текущую ветку на этот коммит (hard)…",
         ["RebaseDots"] = "Интерактивный rebase потомков этого коммита…",
         ["CopySha"] = "Копировать SHA",
+        ["EditMessageDots"] = "Изменить сообщение коммита…",
         ["StageItem"] = "В индекс", ["UnstageItem"] = "Убрать из индекса",
         ["DiscardDots"] = "Отменить изменения…",
         ["OK"] = "ОК", ["Cancel"] = "Отмена", ["Yes"] = "Да", ["No"] = "Нет",
